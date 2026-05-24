@@ -37,4 +37,57 @@ describe("Indexer.notifyChange debounce + serialize", () => {
     await vi.advanceTimersByTimeAsync(1000);
     expect(calls).toEqual([["update"], ["embed", "-c", "vault"]]);
   });
+
+  it("dirty flag coalesces mid-flight changes into exactly one re-run", async () => {
+    // Set up a runner where the FIRST runQmd(["update"]) call blocks until
+    // we manually resolve, all subsequent calls resolve immediately.
+    const calls: string[][] = [];
+    let unblockFirstUpdate!: () => void;
+    let callCount = 0;
+    const run = vi.fn(async (args: string[]) => {
+      callCount++;
+      calls.push(args);
+      if (callCount === 1) {
+        // First call (["update"] from reindex #1) — block until unblocked.
+        await new Promise<void>((resolve) => { unblockFirstUpdate = resolve; });
+      }
+      return { code: 0, stdout: "", stderr: "" };
+    });
+
+    const ix = new Indexer({ ...base, runQmd: run });
+
+    // Fire first notifyChange; advance timer so reindex #1 starts and
+    // blocks inside runQmd(["update"]).
+    ix.notifyChange();
+    await vi.advanceTimersByTimeAsync(1000);
+    // reindex #1 is now awaiting the blocked promise; one call recorded so far.
+    expect(calls).toEqual([["update"]]);
+
+    // Fire two more notifyChange calls while reindex #1 is still in flight.
+    // Their debounce timers each fire and call reindex(), but reindex() sees
+    // running=true and just sets dirty=true (no runQmd calls).
+    ix.notifyChange();
+    await vi.advanceTimersByTimeAsync(1000);
+    ix.notifyChange();
+    await vi.advanceTimersByTimeAsync(1000);
+    // Still only the one blocked call — dirty re-run hasn't happened yet.
+    expect(calls).toEqual([["update"]]);
+
+    // Unblock the first runQmd(["update"]).  The rest of reindex #1
+    // (embed call + finally block + dirty re-run) executes as microtasks /
+    // already-resolved promises, so we just need to drain them.
+    unblockFirstUpdate();
+    // Drain all pending microtasks and any zero-delay timers that arise
+    // from the dirty re-run (reindex() recurses synchronously in finally,
+    // so no new setTimeout is involved — just Promise resolution chains).
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Expected sequence: original run (update + embed) + one dirty re-run (update + embed).
+    expect(calls).toEqual([
+      ["update"],
+      ["embed", "-c", "vault"],
+      ["update"],
+      ["embed", "-c", "vault"],
+    ]);
+  });
 });
