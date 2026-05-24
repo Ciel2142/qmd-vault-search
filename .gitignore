@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Build output
+main.js
+*.js.map
+dist/
+
+# Obsidian plugin local test artifacts
+data.json
+
+# Brainstorming companion (local-only mockups)
+.superpowers/
+
+# OS / editor
+.DS_Store
