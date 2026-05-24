@@ -18,7 +18,11 @@ export default class QmdPlugin extends Plugin {
     await this.loadSettings();
     this.client = new QmdClient({ baseUrl: baseUrl(this.settings) });
 
-    const spawnFn: SpawnFn = (cmd, args, opts) => spawn(cmd, args, opts as object);
+    const spawnFn: SpawnFn = (cmd, args, opts) => {
+      const child = spawn(cmd, args, opts as object);
+      child.on("error", (e) => new Notice(`qmd daemon failed to start: ${e.message}. Check the qmd binary path in settings.`));
+      return child;
+    };
     this.daemon = new DaemonController({ client: this.client, spawnFn, binaryPath: this.settings.binaryPath, port: this.settings.daemonPort });
 
     const vaultPath = this.app.vault.adapter instanceof FileSystemAdapter ? this.app.vault.adapter.getBasePath() : "";
