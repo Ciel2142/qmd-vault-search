@@ -90,4 +90,27 @@ describe("Indexer.notifyChange debounce + serialize", () => {
       ["embed", "-c", "vault"],
     ]);
   });
+
+  it("dispose during in-flight reindex cancels the pending dirty re-run", async () => {
+    let unblock!: () => void;
+    const calls: string[][] = [];
+    const run = vi.fn((args: string[]) => {
+      calls.push(args);
+      if (calls.length === 1) {
+        return new Promise<{ code: number; stdout: string; stderr: string }>((res) => {
+          unblock = () => res({ code: 0, stdout: "", stderr: "" });
+        });
+      }
+      return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+    });
+    const ix = new Indexer({ ...base, runQmd: run });
+    ix.notifyChange();
+    await vi.advanceTimersByTimeAsync(1000); // reindex #1 starts, blocks on the first runQmd(["update"])
+    ix.notifyChange();
+    await vi.advanceTimersByTimeAsync(1000); // reindex #2 sees running → sets dirty
+    ix.dispose();                            // disposed = true
+    unblock();                               // reindex #1 finishes update + embed
+    await vi.advanceTimersByTimeAsync(0);    // drain microtasks; finally sees dirty but disposed → NO re-run
+    expect(calls).toEqual([["update"], ["embed", "-c", "vault"]]); // exactly one run, no dirty re-run
+  });
 });

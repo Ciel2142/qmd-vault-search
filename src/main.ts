@@ -54,7 +54,7 @@ export default class QmdPlugin extends Plugin {
   private async activateSearchView(): Promise<void> {
     const { workspace } = this.app;
     let leaf = workspace.getLeavesOfType(VIEW_TYPE_QMD_SEARCH)[0];
-    if (!leaf) { leaf = workspace.getRightLeaf(false)!; await leaf.setViewState({ type: VIEW_TYPE_QMD_SEARCH, active: true }); }
+    if (!leaf) { leaf = workspace.getRightLeaf(false) ?? workspace.getLeaf(true); await leaf.setViewState({ type: VIEW_TYPE_QMD_SEARCH, active: true }); }
     await workspace.revealLeaf(leaf);
   }
 

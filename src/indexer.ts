@@ -12,6 +12,7 @@ export class Indexer {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private running = false;
   private dirty = false;
+  private disposed = false;
 
   constructor(private deps: IndexerDeps) {}
 
@@ -24,12 +25,14 @@ export class Indexer {
 
   /** Debounced trigger; call on every vault modify/create/delete/rename. */
   notifyChange(): void {
+    if (this.disposed) return;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => { void this.reindex(); }, this.deps.debounceMs);
   }
 
   /** Serialized reindex: no overlap; a change during a run schedules one re-run. */
   private async reindex(): Promise<void> {
+    if (this.disposed) return;
     if (this.running) { this.dirty = true; return; }
     this.running = true;
     try {
@@ -37,12 +40,13 @@ export class Indexer {
       await this.deps.runQmd(["embed", "-c", this.deps.collectionName]);
     } finally {
       this.running = false;
-      if (this.dirty) { this.dirty = false; await this.reindex(); }
+      if (this.dirty && !this.disposed) { this.dirty = false; await this.reindex(); }
     }
   }
 
   dispose(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    this.disposed = true;
   }
 }
