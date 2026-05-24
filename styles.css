@@ -1,0 +1,13 @@
+.qmd-search-view .qmd-search-input { width: 100%; margin-bottom: 8px; }
+.qmd-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.qmd-chip { font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--background-modifier-border); cursor: pointer; opacity: 0.5; }
+.qmd-chip.is-active { opacity: 1; border-color: var(--interactive-accent); }
+.qmd-chip.is-locked { cursor: default; }
+.qmd-result { padding: 6px 4px; border-bottom: 1px solid var(--background-modifier-border); cursor: pointer; }
+.qmd-result:hover { background: var(--background-modifier-hover); }
+.qmd-result-title { font-weight: 600; }
+.qmd-result-meta { display: flex; gap: 8px; font-size: 11px; opacity: 0.7; }
+.qmd-badge.vault { color: var(--interactive-accent); }
+.qmd-badge.external { color: var(--text-accent); }
+.qmd-snippet { font-size: 12px; opacity: 0.8; white-space: pre-wrap; }
+.qmd-status { padding: 8px 4px; opacity: 0.7; }
