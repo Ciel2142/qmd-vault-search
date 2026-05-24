@@ -33,7 +33,7 @@ Standard Obsidian plugin: TypeScript + esbuild, `manifest.json`, `main.ts`. Seve
 
 | Component | Responsibility | Depends on |
 |---|---|---|
-| **QmdClient** | HTTP client to daemon `/mcp`. Plain `fetch` POST with hand-rolled JSON-RPC envelope (no MCP SDK in bundle). Wraps `query` / `get` / `multi_get` / `status` + `/health`. | daemon |
+| **QmdClient** | HTTP client to daemon. Plain `fetch`. **REST** `POST /query` (search) + `GET /health` — no MCP/session. Phase 2 adds a minimal MCP path (`POST /mcp`: initialize → `mcp-session-id` → `tools/call`) for `get`-by-docid (preview) and `status` (collection list). | daemon |
 | **DaemonController** | On load probe `/health`. Up → connect. Down → status indicator + "Start qmd daemon" button (spawns via configured binary path). | QmdClient, `child_process` |
 | **Indexer** | Listen to vault `modify`/`create`/`delete`/`rename` → debounce → spawn `qmd index` (incremental). Register vault as a qmd collection on first run. | `child_process` |
 | **SearchView** | Right-panel `ItemView`: query box, collection chips (vault always-on + selectable external), result rows (title · collection badge · score · snippet), row actions. | QmdClient |
@@ -70,7 +70,7 @@ The focus graph needs **neighbors of a document** ("related to this note"). qmd'
 
 ## Testing (TDD)
 
-- **Unit:** QmdClient JSON-RPC envelope; Indexer debounce/event coalescing; neighbor-derivation logic. Obsidian API mocked.
+- **Unit:** QmdClient REST request/response (+ Phase 2 MCP session handshake); Indexer debounce/event coalescing; neighbor-derivation logic. Obsidian API mocked.
 - **Integration:** against a real local qmd daemon using a **throwaway test collection** (`test_qmdobsidian_<timestamp>`) — never touch the live index.
 - **Manual smoke:** scratch vault.
 - **Error paths:** daemon down (banner + start button), index spawn failure (notice), query error (inline), missing external doc.
@@ -89,9 +89,13 @@ Spec covers the full vision; the **first implementation plan = Phases 1–2**.
 - Managing/indexing external collections (those keep the user's existing qmd workflow; the plugin only registers + reindexes the **vault** collection).
 - Bundling/embedding the qmd engine inside the plugin.
 
-## To validate during planning
+## Planning findings (resolved 2026-05-24)
 
-1. Doc→doc neighbors endpoint vs text-vector fallback (see risk above).
-2. SQLite **WAL** concurrency: daemon reader + CLI writer on the same DB — confirm qmd opens WAL mode.
-3. MCP Streamable-HTTP JSON-RPC envelope shape for `query`/`get` (capture a real request/response against the running daemon).
-4. Registering the vault as a qmd collection programmatically (CLI/config) on first run.
+Read against qmd source `@tobilu/qmd` v2.5.2 (`/home/igi21/experiements/qmd`):
+
+1. **Doc→doc neighbors:** no by-docid similarity endpoint. Confirmed fallback: `vec` query built from the source note's text/excerpt via REST `/query`, scoped to selected collections, drop self. (`src/mcp/server.ts` `query` tool + `/query` REST handler.)
+2. **WAL concurrency:** confirmed — `src/store.ts:833` `PRAGMA journal_mode = WAL`. Daemon-read + CLI-write is safe. No `busy_timeout` set → Indexer serializes its CLI invocations (queue, no overlap) to avoid `SQLITE_BUSY`.
+3. **Search transport:** the daemon exposes a **plain REST `POST /query`** (alias `/search`) — body `{searches:[{type,query}], limit?, minScore?, candidateLimit?, collections?, intent?, rerank?}` → `{results:[{docid,file,title,score,context,line,snippet}]}` — and `GET /health`. No JSON-RPC for search. `POST /mcp` is session-based (initialize → `mcp-session-id` → `tools/call`); used only in Phase 2 for `get`/`status`. (`src/mcp/server.ts:670-822`.)
+4. **Vault as collection:** `qmd collection add <vaultAbsPath> --name vault [--mask "**/*.md"]` registers + indexes immediately (not embed). Reindex existing = `qmd update` (all collections, hash-incremental; no per-collection filter). Embed = `qmd embed [-c vault] [--force]`. (`src/cli/qmd.ts` `collectionAdd` L1590, `updateCollections` L665, `embed` case L4214.)
+5. **Path mapping:** result `file` = collection-relative `displayPath`. Vault-vs-external resolved at runtime via `app.vault.getAbstractFileByPath(file)`; vault hits open with `workspace.openLinkText`. `docid` (`#abc123`) is unique across collections → unambiguous Phase-2 `get`.
+6. **Daemon:** start `qmd mcp --http --daemon` (PID `~/.cache/qmd/mcp.pid`), stop `qmd mcp stop`, default port 8181. `isDesktopOnly: true` (Node `child_process`/`fs`).
