@@ -14,3 +14,6 @@ data.json
 
 # OS / editor
 .DS_Store
+
+# Git worktrees (subagent-driven-development isolation)
+.worktrees/
