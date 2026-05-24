@@ -20,6 +20,11 @@ describe("QmdClient.health", () => {
     const c = new QmdClient({ baseUrl: "http://localhost:8181", fetchFn: f as unknown as typeof fetch });
     expect(await c.health()).toEqual({ ok: false });
   });
+  it("returns ok:false on non-200 (daemon replied with error status)", async () => {
+    const f = fakeFetch(() => ({ status: 503, json: {} }));
+    const c = new QmdClient({ baseUrl: "http://localhost:8181", fetchFn: f as unknown as typeof fetch });
+    expect(await c.health()).toEqual({ ok: false });
+  });
 });
 
 describe("QmdClient.query", () => {
@@ -42,6 +47,6 @@ describe("QmdClient.query", () => {
   it("throws on non-200", async () => {
     const f = fakeFetch(() => ({ status: 400, json: { error: "bad" } }));
     const c = new QmdClient({ baseUrl: "http://localhost:8181", fetchFn: f as unknown as typeof fetch });
-    await expect(c.query({ searches: [{ type: "lex", query: "x" }] })).rejects.toThrow();
+    await expect(c.query({ searches: [{ type: "lex", query: "x" }] })).rejects.toThrow(/HTTP 400/);
   });
 });
