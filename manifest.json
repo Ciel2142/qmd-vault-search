@@ -1,0 +1,9 @@
+{
+  "id": "qmd-search",
+  "name": "qmd Search",
+  "version": "0.1.0",
+  "minAppVersion": "1.7.2",
+  "description": "Search your vault and qmd collections with hybrid (BM25 + vector) search, plus a relational focus graph.",
+  "author": "igi2131",
+  "isDesktopOnly": true
+}

@@ -1,0 +1,26 @@
+{
+  "name": "obsidian-qmd-plugin",
+  "version": "0.1.0",
+  "description": "qmd search engine + relational graph for Obsidian",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.0",
+    "builtin-modules": "5.0.0",
+    "esbuild": "0.25.0",
+    "obsidian": "1.7.2",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  },
+  "dependencies": {
+    "d3-force": "3.0.0",
+    "d3-selection": "3.0.0",
+    "d3-zoom": "3.0.0",
+    "d3-drag": "3.0.0"
+  }
+}
