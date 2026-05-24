@@ -56,7 +56,8 @@ export class SearchView extends ItemView {
         this.renderResults(list, results);
       } catch (e) {
         list.empty();
-        list.createDiv({ cls: "qmd-status", text: `Error: ${(e as Error).message}` });
+        const msg = e instanceof Error ? e.message : String(e);
+        list.createDiv({ cls: "qmd-status", text: `Error: ${msg}` });
       }
     };
     input.addEventListener("keydown", (ev) => { if (ev.key === "Enter") void runSearch(); });
