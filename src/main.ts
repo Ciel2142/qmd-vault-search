@@ -7,6 +7,7 @@ import { Indexer } from "./indexer";
 import { makeRunQmd } from "./cli";
 import { SearchView, VIEW_TYPE_QMD_SEARCH } from "./views/search-view";
 import { spawn } from "node:child_process";
+import { platformSpawnOptions } from "./spawn-opts";
 
 export default class QmdPlugin extends Plugin {
   settings!: QmdSettings;
@@ -19,7 +20,7 @@ export default class QmdPlugin extends Plugin {
     this.client = new QmdClient({ baseUrl: baseUrl(this.settings) });
 
     const spawnFn: SpawnFn = (cmd, args, opts) => {
-      const child = spawn(cmd, args, opts as object);
+      const child = spawn(cmd, args, platformSpawnOptions(opts) as object);
       child.on("error", (e) => new Notice(`qmd daemon failed to start: ${e.message}. Check the qmd binary path in settings.`));
       return child;
     };

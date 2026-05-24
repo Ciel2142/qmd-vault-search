@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process";
 import type { RunQmd } from "./indexer";
+import { platformSpawnOptions } from "./spawn-opts";
 
 /** Build a serialized-by-caller qmd CLI runner. Captures stdout/stderr, never throws. */
 export function makeRunQmd(binaryPath: string): RunQmd {
   return (args) =>
     new Promise((resolve) => {
-      const child = spawn(binaryPath, args, { stdio: ["ignore", "pipe", "pipe"] });
+      const child = spawn(binaryPath, args, { stdio: ["ignore", "pipe", "pipe"], ...platformSpawnOptions({}) });
       let stdout = "";
       let stderr = "";
       child.stdout.on("data", (d) => (stdout += d.toString()));
