@@ -29,6 +29,9 @@ export class QmdSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Reindex debounce (ms)").setDesc("Idle delay before reindexing after edits.")
       .addText((t) => t.setValue(String(this.plugin.settings.debounceMs)).onChange(async (v) => { const n = parseInt(v, 10); if (!Number.isNaN(n)) { this.plugin.settings.debounceMs = n; await this.plugin.saveSettings(); } }));
 
+    new Setting(containerEl).setName("Related notes count").setDesc("How many related notes to show in the Related notes panel.")
+      .addText((t) => t.setValue(String(this.plugin.settings.relatedTopK)).onChange(async (v) => { const n = parseInt(v, 10); if (!Number.isNaN(n)) { this.plugin.settings.relatedTopK = n; await this.plugin.saveSettings(); } }));
+
     new Setting(containerEl).setName("Detect collections").setDesc("List collections from the running daemon and pick which to include.")
       .addButton((b) => b.setButtonText("Detect").onClick(async () => {
         try {

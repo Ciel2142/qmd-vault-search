@@ -7,6 +7,9 @@ describe("settings", () => {
     expect(DEFAULT_SETTINGS.daemonPort).toBe(8181);
     expect(DEFAULT_SETTINGS.rerank).toBe(true);
   });
+  it("defaults relatedTopK to 8", () => {
+    expect(DEFAULT_SETTINGS.relatedTopK).toBe(8);
+  });
   it("builds base URL from port", () => {
     expect(baseUrl({ ...DEFAULT_SETTINGS, daemonPort: 9000 })).toBe("http://localhost:9000");
   });
