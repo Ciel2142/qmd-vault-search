@@ -11,3 +11,7 @@
 .qmd-badge.external { color: var(--text-accent); }
 .qmd-snippet { font-size: 12px; opacity: 0.8; white-space: pre-wrap; }
 .qmd-status { padding: 8px 4px; opacity: 0.7; }
+.qmd-mode-toggle { display: flex; gap: 6px; margin-bottom: 8px; }
+.qmd-mode-btn { font-size: 11px; padding: 2px 10px; border-radius: 10px; border: 1px solid var(--background-modifier-border); cursor: pointer; opacity: 0.5; user-select: none; }
+.qmd-mode-btn.is-active { opacity: 1; border-color: var(--interactive-accent); color: var(--interactive-accent); }
+.qmd-fallback-indicator { font-size: 11px; opacity: 0.7; margin-bottom: 6px; font-style: italic; }
