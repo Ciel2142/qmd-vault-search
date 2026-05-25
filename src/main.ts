@@ -6,6 +6,7 @@ import { DaemonController, SpawnFn } from "./daemon-controller";
 import { Indexer } from "./indexer";
 import { makeRunQmd } from "./cli";
 import { SearchView, VIEW_TYPE_QMD_SEARCH } from "./views/search-view";
+import { FocusGraphView, VIEW_TYPE_QMD_GRAPH } from "./views/focus-graph-view";
 import { spawn } from "node:child_process";
 import { platformSpawnOptions } from "./spawn-opts";
 
@@ -32,6 +33,16 @@ export default class QmdPlugin extends Plugin {
     this.registerView(VIEW_TYPE_QMD_SEARCH, (leaf: WorkspaceLeaf) => new SearchView(leaf, this.client, this.settings));
     this.addRibbonIcon("search", "qmd Search", () => this.activateSearchView());
     this.addCommand({ id: "open-qmd-search", name: "Open qmd search panel", callback: () => this.activateSearchView() });
+    this.registerView(VIEW_TYPE_QMD_GRAPH, (leaf: WorkspaceLeaf) => new FocusGraphView(leaf, this.client, this.settings));
+    this.addCommand({ id: "open-qmd-focus-graph", name: "Open focus graph for current note", callback: () => this.activateGraphView() });
+    this.registerEvent(this.app.workspace.on(
+      "qmd:center-graph" as never,
+      (async (file: string, label: string) => {
+        const leaf = await this.activateGraphView();
+        // Deferred views (1.7.2+): never cast leaf.view — guard with instanceof after the awaited revealLeaf above.
+        if (leaf && leaf.view instanceof FocusGraphView) await leaf.view.centerOn(file, label);
+      }) as never,
+    ));
     this.addSettingTab(new QmdSettingTab(this.app, this));
 
     // Daemon: probe, offer to start.
@@ -62,6 +73,14 @@ export default class QmdPlugin extends Plugin {
     let leaf = workspace.getLeavesOfType(VIEW_TYPE_QMD_SEARCH)[0];
     if (!leaf) { leaf = workspace.getRightLeaf(false) ?? workspace.getLeaf(true); await leaf.setViewState({ type: VIEW_TYPE_QMD_SEARCH, active: true }); }
     await workspace.revealLeaf(leaf);
+  }
+
+  private async activateGraphView(): Promise<WorkspaceLeaf | null> {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_QMD_GRAPH)[0];
+    if (!leaf) { leaf = workspace.getLeaf("tab"); await leaf.setViewState({ type: VIEW_TYPE_QMD_GRAPH, active: true }); }
+    await workspace.revealLeaf(leaf);   // await: revealLeaf returns Promise (1.7.2); guarantees the leaf is loaded, not deferred
+    return leaf;
   }
 
   async loadSettings(): Promise<void> { this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()); }

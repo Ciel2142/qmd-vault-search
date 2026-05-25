@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Notice, TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import type { QmdClient, QmdSearchResult } from "../qmd-client";
 import type { QmdSettings } from "../settings";
 import { resolveOpenTarget } from "../open-target";
@@ -73,6 +73,12 @@ export class SearchView extends ItemView {
       const meta = row.createDiv({ cls: "qmd-result-meta" });
       meta.createSpan({ cls: `qmd-badge ${target.kind}`, text: target.kind === "vault" ? "vault" : "external" });
       meta.createSpan({ cls: "qmd-score", text: `${Math.round(r.score * 100)}%` });
+      const graphBtn = meta.createSpan({ cls: "qmd-graph-link", text: "graph" });
+      graphBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        // Center the graph on this hit (vault note path, or external file path).
+        this.app.workspace.trigger("qmd:center-graph", r.file, r.title || r.file);
+      };
       row.createDiv({ cls: "qmd-snippet", text: r.snippet });
       row.onclick = () => this.openTarget(r);
     }
@@ -83,9 +89,8 @@ export class SearchView extends ItemView {
     if (target.kind === "vault") {
       await this.app.workspace.openLinkText(target.path, "", false);
     } else {
-      // Phase 1: no in-app preview yet. Surface the path; full preview lands in Phase 2.
-      await navigator.clipboard.writeText(target.file);
-      new Notice(`External doc (${target.file}) — path copied. In-app preview arrives in Phase 2.`);
+      const { DocPreviewModal } = await import("../views/doc-preview");
+      new DocPreviewModal(this.app, this.client, target.docid).open();
     }
   }
 
