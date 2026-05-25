@@ -20,9 +20,29 @@ export interface QmdQueryOptions {
   rerank?: boolean;
 }
 
+/** Minimal HTTP init the client emits. */
+export interface FetchLikeInit {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+/** The subset of a fetch Response the client reads. Lets us swap in Obsidian's requestUrl (no CORS / no Window binding). */
+export interface FetchLikeResponse {
+  ok: boolean;
+  status: number;
+  headers: { get(name: string): string | null };
+  json(): Promise<unknown>;
+}
+
+export type FetchLike = (url: string, init?: FetchLikeInit) => Promise<FetchLikeResponse>;
+
+/** Default transport: global fetch called as a free function so `this` binds to the realm global, not the QmdClient (else "Illegal invocation"). Prod injects a requestUrl-backed fetchFn instead. */
+const defaultFetch: FetchLike = (url, init) => fetch(url, init);
+
 export interface QmdClientConfig {
   baseUrl: string;
-  fetchFn?: typeof fetch;
+  fetchFn?: FetchLike;
 }
 
 export interface QmdCollection {
@@ -41,8 +61,8 @@ export interface QmdDocument {
 
 export class QmdClient {
   constructor(private cfg: QmdClientConfig) {}
-  private get f(): typeof fetch {
-    return this.cfg.fetchFn ?? fetch;
+  private get f(): FetchLike {
+    return this.cfg.fetchFn ?? defaultFetch;
   }
 
   private sessionId: string | null = null;
@@ -90,10 +110,13 @@ export class QmdClient {
   }
 
   async mcpGet(fileOrDocid: string): Promise<QmdDocument> {
-    const result = await this.mcpCall<{ content: { type: string; resource?: { name: string; title?: string; text: string } }[] }>("get", { file: fileOrDocid });
+    const result = await this.mcpCall<{ content: { type: string; resource?: { uri?: string; name?: string; title?: string; text?: string } }[] }>("get", { file: fileOrDocid });
     const res = result.content.find((c) => c.type === "resource")?.resource;
     if (!res) throw new Error(`qmd get: no document for ${fileOrDocid}`);
-    return { path: res.name, title: res.title ?? res.name, text: res.text };
+    // MCP `get` returns a standard resource { uri, mimeType, text } — no name/title — so derive them from the uri.
+    const path = res.name ?? (res.uri ?? "").replace(/^qmd:\/\//, "");
+    const title = res.title || path.split("/").pop()?.replace(/\.md$/i, "") || path || fileOrDocid;
+    return { path, title, text: res.text ?? "" };
   }
 
   async mcpStatus(): Promise<QmdCollection[]> {
