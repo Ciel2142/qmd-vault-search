@@ -1,7 +1,8 @@
-import { Plugin, Notice, FileSystemAdapter, WorkspaceLeaf } from "obsidian";
+import { Plugin, Notice, FileSystemAdapter, WorkspaceLeaf, requestUrl } from "obsidian";
 import { DEFAULT_SETTINGS, QmdSettings, baseUrl } from "./settings";
 import { QmdSettingTab } from "./settings-tab";
 import { QmdClient } from "./qmd-client";
+import { makeRequestUrlFetch } from "./request-url-fetch";
 import { DaemonController, SpawnFn } from "./daemon-controller";
 import { Indexer } from "./indexer";
 import { makeRunQmd } from "./cli";
@@ -19,7 +20,7 @@ export default class QmdPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
-    this.client = new QmdClient({ baseUrl: baseUrl(this.settings) });
+    this.client = new QmdClient({ baseUrl: baseUrl(this.settings), fetchFn: makeRequestUrlFetch(requestUrl) });
 
     const spawnFn: SpawnFn = (cmd, args, opts) => {
       const child = spawn(cmd, args, platformSpawnOptions(opts) as object);
@@ -35,6 +36,7 @@ export default class QmdPlugin extends Plugin {
     this.addRibbonIcon("search", "qmd Search", () => this.activateSearchView());
     this.addCommand({ id: "open-qmd-search", name: "Open qmd search panel", callback: () => this.activateSearchView() });
     this.registerView(VIEW_TYPE_QMD_GRAPH, (leaf: WorkspaceLeaf) => new FocusGraphView(leaf, this.client, this.settings));
+    this.addRibbonIcon("git-fork", "qmd Focus graph", () => { void this.activateGraphView(); });
     this.addCommand({ id: "open-qmd-focus-graph", name: "Open focus graph for current note", callback: () => this.activateGraphView() });
     this.registerView(VIEW_TYPE_QMD_RELATED, (leaf: WorkspaceLeaf) => new RelatedNotesView(leaf, this.client, this.settings));
     this.addRibbonIcon("list", "qmd Related notes", () => this.activateRelatedView());
@@ -97,7 +99,7 @@ export default class QmdPlugin extends Plugin {
   async loadSettings(): Promise<void> { this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()); }
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
-    this.client = new QmdClient({ baseUrl: baseUrl(this.settings) });
+    this.client = new QmdClient({ baseUrl: baseUrl(this.settings), fetchFn: makeRequestUrlFetch(requestUrl) });
   }
   async onunload(): Promise<void> { this.indexer?.dispose(); }
 }
