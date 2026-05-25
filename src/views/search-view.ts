@@ -1,7 +1,7 @@
-import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
-import type { QmdClient, QmdSearchResult } from "../qmd-client";
+import { ItemView, WorkspaceLeaf } from "obsidian";
+import type { QmdClient } from "../qmd-client";
 import type { QmdSettings } from "../settings";
-import { resolveOpenTarget } from "../open-target";
+import { renderResultList } from "../result-list";
 
 export const VIEW_TYPE_QMD_SEARCH = "qmd-search-view";
 
@@ -53,7 +53,7 @@ export class SearchView extends ItemView {
           collections: [...selected],
           rerank: this.settings.rerank,
         });
-        this.renderResults(list, results);
+        renderResultList({ container: list, results, app: this.app, client: this.client, emptyText: "No results." });
       } catch (e) {
         list.empty();
         const msg = e instanceof Error ? e.message : String(e);
@@ -61,37 +61,6 @@ export class SearchView extends ItemView {
       }
     };
     input.addEventListener("keydown", (ev) => { if (ev.key === "Enter") void runSearch(); });
-  }
-
-  private renderResults(list: HTMLElement, results: QmdSearchResult[]): void {
-    list.empty();
-    if (results.length === 0) { list.createDiv({ cls: "qmd-status", text: "No results." }); return; }
-    for (const r of results) {
-      const row = list.createDiv({ cls: "qmd-result" });
-      const target = resolveOpenTarget(r.file, r.docid, (p) => this.app.vault.getAbstractFileByPath(p) instanceof TFile);
-      row.createDiv({ cls: "qmd-result-title", text: r.title || r.file });
-      const meta = row.createDiv({ cls: "qmd-result-meta" });
-      meta.createSpan({ cls: `qmd-badge ${target.kind}`, text: target.kind === "vault" ? "vault" : "external" });
-      meta.createSpan({ cls: "qmd-score", text: `${Math.round(r.score * 100)}%` });
-      const graphBtn = meta.createSpan({ cls: "qmd-graph-link", text: "graph" });
-      graphBtn.onclick = (ev) => {
-        ev.stopPropagation();
-        // Center the graph on this hit (vault note path, or external file path).
-        this.app.workspace.trigger("qmd:center-graph", r.file, r.title || r.file);
-      };
-      row.createDiv({ cls: "qmd-snippet", text: r.snippet });
-      row.onclick = () => this.openTarget(r);
-    }
-  }
-
-  private async openTarget(r: QmdSearchResult): Promise<void> {
-    const target = resolveOpenTarget(r.file, r.docid, (p) => this.app.vault.getAbstractFileByPath(p) instanceof TFile);
-    if (target.kind === "vault") {
-      await this.app.workspace.openLinkText(target.path, "", false);
-    } else {
-      const { DocPreviewModal } = await import("../views/doc-preview");
-      new DocPreviewModal(this.app, this.client, target.docid).open();
-    }
   }
 
   async onClose(): Promise<void> { this.contentEl.empty(); }
