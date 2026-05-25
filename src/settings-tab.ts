@@ -36,8 +36,8 @@ export class QmdSettingTab extends PluginSettingTab {
           const names = cols.map((c) => c.name).filter((n) => n !== this.plugin.settings.vaultCollectionName);
           this.plugin.settings.externalCollections = this.plugin.settings.externalCollections.filter((n) => names.includes(n));
           // Render checkboxes for each available external collection:
+          containerEl.querySelector(".qmd-collection-box")?.remove();
           const box = containerEl.createDiv({ cls: "qmd-collection-box" });
-          box.empty();
           for (const name of names) {
             new Setting(box).setName(name)
               .addToggle((t) => t.setValue(this.plugin.settings.externalCollections.includes(name)).onChange(async (v) => {
