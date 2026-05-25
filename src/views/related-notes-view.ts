@@ -55,7 +55,7 @@ export class RelatedNotesView extends ItemView {
     if (decision.action === "skip" || decision.action === "defer") return;
     if (decision.action === "clear") {
       this.lastPath = null;
-      renderResultList({ container: this.listEl, results: [], app: this.app, client: this.client, emptyText: "Open a note to see related notes." });
+      renderResultList({ container: this.listEl, results: [], app: this.app, client: this.client, emptyText: "Open a note to see related notes.", vaultCollectionName: this.settings.vaultCollectionName });
       return;
     }
 
@@ -72,12 +72,12 @@ export class RelatedNotesView extends ItemView {
       const neighbors = await deriveNeighbors(this.client, {
         content,
         collections: [this.settings.vaultCollectionName, ...this.settings.externalCollections],
-        selfFile: path,
+        selfFile: `${this.settings.vaultCollectionName}/${path}`, // qmd reports collection-prefixed paths; match that form to filter the active note out
         limit: this.settings.relatedTopK,
         minScore: this.settings.graphMinScore,
       });
       if (token !== this.renderToken) return; // superseded by a newer refresh
-      renderResultList({ container: this.listEl, results: neighbors, app: this.app, client: this.client, emptyText: "No related notes found." });
+      renderResultList({ container: this.listEl, results: neighbors, app: this.app, client: this.client, emptyText: "No related notes found.", vaultCollectionName: this.settings.vaultCollectionName });
       this.lastPath = path;
     } catch (e) {
       if (token !== this.renderToken) return;

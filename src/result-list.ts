@@ -1,6 +1,7 @@
-import { App, TFile } from "obsidian";
+import { App } from "obsidian";
 import type { QmdClient, QmdSearchResult } from "./qmd-client";
-import { resolveOpenTarget } from "./open-target";
+import { resolveOpenTarget, type OpenTarget } from "./open-target";
+import { makeVaultResolver } from "./vault-resolver";
 
 export interface RenderResultListOptions {
   container: HTMLElement;
@@ -8,24 +9,21 @@ export interface RenderResultListOptions {
   app: App;
   client: QmdClient;
   emptyText: string;
-}
-
-/** A result is openable in the vault iff its collection-relative path resolves to a vault TFile. */
-function isVaultFile(app: App, path: string): boolean {
-  return app.vault.getAbstractFileByPath(path) instanceof TFile;
+  vaultCollectionName: string;
 }
 
 /** Render a list of qmd results. Shared by SearchView and RelatedNotesView. */
 export function renderResultList(opts: RenderResultListOptions): void {
-  const { container, results, app, client, emptyText } = opts;
+  const { container, results, app, client, emptyText, vaultCollectionName } = opts;
   container.empty();
   if (results.length === 0) {
     container.createDiv({ cls: "qmd-status", text: emptyText });
     return;
   }
+  const resolveVaultPath = makeVaultResolver(app);
   for (const r of results) {
     const row = container.createDiv({ cls: "qmd-result" });
-    const target = resolveOpenTarget(r.file, r.docid, (p) => isVaultFile(app, p));
+    const target = resolveOpenTarget(r.file, r.docid, resolveVaultPath, vaultCollectionName);
     row.createDiv({ cls: "qmd-result-title", text: r.title || r.file });
     const meta = row.createDiv({ cls: "qmd-result-meta" });
     meta.createSpan({ cls: `qmd-badge ${target.kind}`, text: target.kind === "vault" ? "vault" : "external" });
@@ -36,12 +34,11 @@ export function renderResultList(opts: RenderResultListOptions): void {
       app.workspace.trigger("qmd:center-graph", r.file, r.title || r.file);
     };
     row.createDiv({ cls: "qmd-snippet", text: r.snippet });
-    row.onclick = (): void => { void openTarget(app, client, r); };
+    row.onclick = (): void => { void openTarget(app, client, target); };
   }
 }
 
-async function openTarget(app: App, client: QmdClient, r: QmdSearchResult): Promise<void> {
-  const target = resolveOpenTarget(r.file, r.docid, (p) => isVaultFile(app, p));
+async function openTarget(app: App, client: QmdClient, target: OpenTarget): Promise<void> {
   if (target.kind === "vault") {
     await app.workspace.openLinkText(target.path, "", false);
   } else {

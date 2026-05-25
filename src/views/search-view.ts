@@ -53,7 +53,7 @@ export class SearchView extends ItemView {
           collections: [...selected],
           rerank: this.settings.rerank,
         });
-        renderResultList({ container: list, results, app: this.app, client: this.client, emptyText: "No results." });
+        renderResultList({ container: list, results, app: this.app, client: this.client, emptyText: "No results.", vaultCollectionName: this.settings.vaultCollectionName });
       } catch (e) {
         list.empty();
         const msg = e instanceof Error ? e.message : String(e);

@@ -4,6 +4,7 @@ import type { QmdClient } from "../qmd-client";
 import type { QmdSettings } from "../settings";
 import { deriveNeighbors } from "../neighbors";
 import { buildEgoGraph, type EgoGraph, type GraphNode } from "../graph-builder";
+import { makeVaultResolver } from "../vault-resolver";
 
 export const VIEW_TYPE_QMD_GRAPH = "qmd-focus-graph";
 
@@ -43,7 +44,7 @@ export class FocusGraphView extends ItemView {
         minScore: this.settings.graphMinScore,
       });
       if (token !== this.renderToken) return; // a newer centerOn superseded this one
-      const graph = buildEgoGraph({ id: "center", label, file: path }, neighbors, (p) => this.app.vault.getAbstractFileByPath(p) instanceof TFile);
+      const graph = buildEgoGraph({ id: "center", label, file: path }, neighbors, makeVaultResolver(this.app), this.settings.vaultCollectionName);
       this.render(graph);
     } catch (e) {
       if (token === this.renderToken) new Notice("qmd graph: " + (e instanceof Error ? e.message : String(e)));
