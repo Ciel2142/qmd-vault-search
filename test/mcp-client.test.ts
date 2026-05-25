@@ -23,13 +23,15 @@ function mcpFetch(getResult: unknown, statusResult: unknown) {
 }
 
 describe("QmdClient MCP", () => {
-  it("get() handshakes once and returns document text + title", async () => {
-    const getResult = { content: [{ type: "resource", resource: { uri: "qmd://docs/y.md", name: "docs/y.md", title: "Y", text: "# Y\nbody" } }] };
+  it("get() handshakes once and derives path + title from the resource uri", async () => {
+    // Real qmd returns a standard MCP resource: { uri, mimeType, text } — no name/title.
+    const getResult = { content: [{ type: "resource", resource: { uri: "qmd://docs/y.md", mimeType: "text/markdown", text: "# Y\nbody" } }] };
     const f = mcpFetch(getResult, {});
     const c = new QmdClient({ baseUrl: "http://localhost:8181", fetchFn: f as unknown as typeof fetch });
     const doc = await c.mcpGet("#b2");
     expect(doc.text).toContain("body");
-    expect(doc.title).toBe("Y");
+    expect(doc.path).toBe("docs/y.md");
+    expect(doc.title).toBe("y");
     // second call reuses the session (no second initialize)
     await c.mcpGet("#b2");
     const initCalls = f.mock.calls.filter((args) => JSON.parse(String((args[1] as RequestInit)?.body)).method === "initialize");

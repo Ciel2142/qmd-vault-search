@@ -8,6 +8,7 @@ export interface QmdSettings {
   debounceMs: number;             // on-save reindex debounce
   graphTopK: number;              // focus-graph neighbor count
   graphMinScore: number;          // focus-graph min similarity
+  relatedTopK: number;            // related-notes panel neighbor count
   autoReindex: boolean;           // reindex vault on save
 }
 
@@ -21,6 +22,7 @@ export const DEFAULT_SETTINGS: QmdSettings = {
   debounceMs: 1500,
   graphTopK: 12,
   graphMinScore: 0.3,
+  relatedTopK: 8,
   autoReindex: true,
 };
 
