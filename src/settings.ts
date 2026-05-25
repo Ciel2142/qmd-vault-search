@@ -9,6 +9,10 @@ export interface QmdSettings {
   graphTopK: number;              // focus-graph neighbor count
   graphMinScore: number;          // focus-graph min similarity
   relatedTopK: number;            // related-notes panel neighbor count
+  searchMode: "keyword" | "hybrid"; // search-panel mode (persisted toggle)
+  searchDebounceMs: number;       // keyword as-you-type debounce
+  fallbackOnFailure: boolean;     // hybrid errors → retry as keyword
+  fallbackOnZero: boolean;        // hybrid 0 results → retry as keyword
   autoReindex: boolean;           // reindex vault on save
 }
 
@@ -23,6 +27,10 @@ export const DEFAULT_SETTINGS: QmdSettings = {
   graphTopK: 12,
   graphMinScore: 0.3,
   relatedTopK: 8,
+  searchMode: "hybrid",
+  searchDebounceMs: 300,
+  fallbackOnFailure: true,
+  fallbackOnZero: false,
   autoReindex: true,
 };
 

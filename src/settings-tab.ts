@@ -32,6 +32,15 @@ export class QmdSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Related notes count").setDesc("How many related notes to show in the Related notes panel.")
       .addText((t) => t.setValue(String(this.plugin.settings.relatedTopK)).onChange(async (v) => { const n = parseInt(v, 10); if (!Number.isNaN(n)) { this.plugin.settings.relatedTopK = n; await this.plugin.saveSettings(); } }));
 
+    new Setting(containerEl).setName("Search debounce (ms)").setDesc("Idle delay before the live keyword search fires as you type.")
+      .addText((t) => t.setValue(String(this.plugin.settings.searchDebounceMs)).onChange(async (v) => { const n = parseInt(v, 10); if (!Number.isNaN(n)) { this.plugin.settings.searchDebounceMs = n; await this.plugin.saveSettings(); } }));
+
+    new Setting(containerEl).setName("Fallback on semantic failure").setDesc("If a Hybrid search errors, retry as a keyword search.")
+      .addToggle((t) => t.setValue(this.plugin.settings.fallbackOnFailure).onChange(async (v) => { this.plugin.settings.fallbackOnFailure = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl).setName("Fallback on zero results").setDesc("If a Hybrid search returns nothing, retry as a keyword search.")
+      .addToggle((t) => t.setValue(this.plugin.settings.fallbackOnZero).onChange(async (v) => { this.plugin.settings.fallbackOnZero = v; await this.plugin.saveSettings(); }));
+
     new Setting(containerEl).setName("Detect collections").setDesc("List collections from the running daemon and pick which to include.")
       .addButton((b) => b.setButtonText("Detect").onClick(async () => {
         try {
