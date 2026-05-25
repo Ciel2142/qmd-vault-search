@@ -2,6 +2,7 @@ import { App } from "obsidian";
 import type { QmdClient, QmdSearchResult } from "./qmd-client";
 import { resolveOpenTarget, type OpenTarget } from "./open-target";
 import { makeVaultResolver } from "./vault-resolver";
+import { cleanSnippet } from "./clean-snippet";
 
 export interface RenderResultListOptions {
   container: HTMLElement;
@@ -33,7 +34,7 @@ export function renderResultList(opts: RenderResultListOptions): void {
       ev.stopPropagation();
       app.workspace.trigger("qmd:center-graph", r.file, r.title || r.file);
     };
-    row.createDiv({ cls: "qmd-snippet", text: r.snippet });
+    row.createDiv({ cls: "qmd-snippet", text: cleanSnippet(r.snippet) });
     row.onclick = (): void => { void openTarget(app, client, target); };
   }
 }
