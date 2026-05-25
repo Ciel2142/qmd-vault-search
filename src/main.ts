@@ -49,11 +49,12 @@ export default class QmdPlugin extends Plugin {
   }
 
   private async bootstrapIndexing(): Promise<void> {
-    // Phase 1 cannot list collections programmatically (status is MCP-only, added in Phase 2).
-    // ensureCollection is idempotent: `qmd collection add` errors harmlessly if the
-    // collection already exists, so pass [] and let the CLI no-op on re-add.
-    try { await this.indexer.ensureCollection([]); }
-    catch (e) { console.warn("qmd-search: vault collection bootstrap:", e); }
+    try {
+      const cols = await this.client.mcpStatus().then((c) => c.map((x) => x.name)).catch(() => [] as string[]);
+      await this.indexer.ensureCollection(cols);
+    } catch (e) {
+      console.warn("qmd-search: vault collection bootstrap:", e);
+    }
   }
 
   private async activateSearchView(): Promise<void> {
