@@ -17,7 +17,7 @@ export class QmdSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Vault collection name").setDesc("qmd collection name for this vault.")
       .addText((t) => t.setValue(this.plugin.settings.vaultCollectionName).onChange(async (v) => { this.plugin.settings.vaultCollectionName = v || "vault"; await this.plugin.saveSettings(); }));
 
-    new Setting(containerEl).setName("External collections").setDesc("Comma-separated qmd collection names to include (Phase 2 replaces with a picker).")
+    new Setting(containerEl).setName("External collections").setDesc("Comma-separated qmd collection names to include. Or use \"Detect collections\" below to pick from the running daemon.")
       .addText((t) => t.setValue(this.plugin.settings.externalCollections.join(", ")).onChange(async (v) => { this.plugin.settings.externalCollections = v.split(",").map((s) => s.trim()).filter(Boolean); await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("Rerank").setDesc("LLM rerank on explicit search (slower, better quality).")
