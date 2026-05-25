@@ -124,6 +124,7 @@ export class SearchView extends ItemView {
 
     const switchMode = async (next: SearchMode): Promise<void> => {
       if (this.mode === next) return;
+      if (this.debounceTimer !== null) { window.clearTimeout(this.debounceTimer); this.debounceTimer = null; }
       this.mode = next;
       this.settings.searchMode = next;
       renderToggle();
