@@ -1,8 +1,9 @@
 import { App } from "obsidian";
 import type { QmdClient, QmdSearchResult } from "./qmd-client";
-import { resolveOpenTarget, type OpenTarget } from "./open-target";
+import { resolveOpenTarget } from "./open-target";
 import { makeVaultResolver } from "./vault-resolver";
 import { cleanSnippet } from "./clean-snippet";
+import { openResolvedTarget } from "./open-action";
 
 export interface RenderResultListOptions {
   container: HTMLElement;
@@ -36,15 +37,6 @@ export function renderResultList(opts: RenderResultListOptions): void {
       app.workspace.trigger("qmd:center-graph", r.file, r.title || r.file);
     };
     row.createDiv({ cls: "qmd-snippet", text: cleanSnippet(r.snippet) });
-    row.onclick = (): void => { void openTarget(app, client, target); };
-  }
-}
-
-async function openTarget(app: App, client: QmdClient, target: OpenTarget): Promise<void> {
-  if (target.kind === "vault") {
-    await app.workspace.openLinkText(target.path, "", false);
-  } else {
-    const { DocPreviewModal } = await import("./views/doc-preview");
-    new DocPreviewModal(app, client, target.docid).open();
+    row.onclick = (): void => { void openResolvedTarget(app, client, target); };
   }
 }
