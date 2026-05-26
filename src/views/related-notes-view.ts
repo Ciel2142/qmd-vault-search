@@ -74,7 +74,7 @@ export class RelatedNotesView extends ItemView {
         collections: [this.settings.vaultCollectionName, ...this.settings.externalCollections],
         selfFile: `${this.settings.vaultCollectionName}/${path}`, // qmd reports collection-prefixed paths; match that form to filter the active note out
         limit: this.settings.relatedTopK,
-        minScore: this.settings.graphMinScore,
+        minScore: this.settings.relatedMinScore,
       });
       if (token !== this.renderToken) return; // superseded by a newer refresh
       renderResultList({ container: this.listEl, results: neighbors, app: this.app, client: this.client, emptyText: "No related notes found.", vaultCollectionName: this.settings.vaultCollectionName });

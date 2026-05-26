@@ -31,11 +31,6 @@ export function renderResultList(opts: RenderResultListOptions): void {
     meta.createSpan({ cls: `qmd-badge ${target.kind}`, text: target.kind === "vault" ? "vault" : "external" });
     // Rank, not score: qmd's blended score is reciprocal-rank-dominated (1/rank), not calibrated relevance — show position instead.
     meta.createSpan({ cls: "qmd-rank", text: `#${i + 1}` });
-    const graphBtn = meta.createSpan({ cls: "qmd-graph-link", text: "graph" });
-    graphBtn.onclick = (ev): void => {
-      ev.stopPropagation();
-      app.workspace.trigger("qmd:center-graph", r.file, r.title || r.file);
-    };
     row.createDiv({ cls: "qmd-snippet", text: cleanSnippet(r.snippet) });
     row.onclick = (): void => { void openResolvedTarget(app, client, target); };
   }
