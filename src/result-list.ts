@@ -22,13 +22,14 @@ export function renderResultList(opts: RenderResultListOptions): void {
     return;
   }
   const resolveVaultPath = makeVaultResolver(app);
-  for (const r of results) {
+  for (const [i, r] of results.entries()) {
     const row = container.createDiv({ cls: "qmd-result" });
     const target = resolveOpenTarget(r.file, r.docid, resolveVaultPath, vaultCollectionName);
     row.createDiv({ cls: "qmd-result-title", text: r.title || r.file });
     const meta = row.createDiv({ cls: "qmd-result-meta" });
     meta.createSpan({ cls: `qmd-badge ${target.kind}`, text: target.kind === "vault" ? "vault" : "external" });
-    meta.createSpan({ cls: "qmd-score", text: `${Math.round(r.score * 100)}%` });
+    // Rank, not score: qmd's blended score is reciprocal-rank-dominated (1/rank), not calibrated relevance — show position instead.
+    meta.createSpan({ cls: "qmd-rank", text: `#${i + 1}` });
     const graphBtn = meta.createSpan({ cls: "qmd-graph-link", text: "graph" });
     graphBtn.onclick = (ev): void => {
       ev.stopPropagation();
