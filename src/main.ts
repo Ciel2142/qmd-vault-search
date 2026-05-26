@@ -38,7 +38,8 @@ export default class QmdPlugin extends Plugin {
     this.addRibbonIcon("search", "qmd Search", () => this.activateSearchView());
     this.addCommand({ id: "open-qmd-search", name: "Open qmd search panel", callback: () => this.activateSearchView() });
     this.addCommand({ id: "open-qmd-search-modal", name: "Search qmd (modal)", callback: () => new QmdSearchModal(this.app, this.client, this.settings).open() });
-    // Semantic [[? link suggester. Passes current client/settings, same as the search surfaces;
+    // Semantic @@ link suggester (non-[[ trigger: the built-in [[ suggester claims any [[... context).
+    // Passes current client/settings, same as the search surfaces;
     // the daemon URL is only re-read on a settings change after a reload (matches the views' behavior).
     this.registerEditorSuggest(new QmdLinkSuggest(this.app, this.client, this.settings));
     this.registerView(VIEW_TYPE_QMD_GRAPH, (leaf: WorkspaceLeaf) => new FocusGraphView(leaf, this.client, this.settings));
