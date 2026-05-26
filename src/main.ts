@@ -7,7 +7,6 @@ import { DaemonController, SpawnFn } from "./daemon-controller";
 import { Indexer } from "./indexer";
 import { makeRunQmd } from "./cli";
 import { SearchView, VIEW_TYPE_QMD_SEARCH } from "./views/search-view";
-import { FocusGraphView, VIEW_TYPE_QMD_GRAPH } from "./views/focus-graph-view";
 import { RelatedNotesView, VIEW_TYPE_QMD_RELATED } from "./views/related-notes-view";
 import { QmdSearchModal } from "./views/search-modal";
 import { QmdLinkSuggest } from "./views/link-suggest-view";
@@ -42,20 +41,9 @@ export default class QmdPlugin extends Plugin {
     // Passes current client/settings, same as the search surfaces;
     // the daemon URL is only re-read on a settings change after a reload (matches the views' behavior).
     this.registerEditorSuggest(new QmdLinkSuggest(this.app, this.client, this.settings));
-    this.registerView(VIEW_TYPE_QMD_GRAPH, (leaf: WorkspaceLeaf) => new FocusGraphView(leaf, this.client, this.settings));
-    this.addRibbonIcon("git-fork", "qmd Focus graph", () => { void this.activateGraphView(); });
-    this.addCommand({ id: "open-qmd-focus-graph", name: "Open focus graph for current note", callback: () => this.activateGraphView() });
     this.registerView(VIEW_TYPE_QMD_RELATED, (leaf: WorkspaceLeaf) => new RelatedNotesView(leaf, this.client, this.settings));
     this.addRibbonIcon("list", "qmd Related notes", () => this.activateRelatedView());
     this.addCommand({ id: "open-qmd-related", name: "Open related notes panel", callback: () => this.activateRelatedView() });
-    this.registerEvent(this.app.workspace.on(
-      "qmd:center-graph" as never,
-      (async (file: string, label: string) => {
-        const leaf = await this.activateGraphView();
-        // Deferred views (1.7.2+): never cast leaf.view — guard with instanceof after the awaited revealLeaf above.
-        if (leaf && leaf.view instanceof FocusGraphView) await leaf.view.centerOn(file, label);
-      }) as never,
-    ));
     this.addSettingTab(new QmdSettingTab(this.app, this));
 
     // Daemon: probe, offer to start.
@@ -93,14 +81,6 @@ export default class QmdPlugin extends Plugin {
     let leaf = workspace.getLeavesOfType(VIEW_TYPE_QMD_RELATED)[0];
     if (!leaf) { leaf = workspace.getRightLeaf(false) ?? workspace.getLeaf(true); await leaf.setViewState({ type: VIEW_TYPE_QMD_RELATED, active: true }); }
     await workspace.revealLeaf(leaf);
-  }
-
-  private async activateGraphView(): Promise<WorkspaceLeaf | null> {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(VIEW_TYPE_QMD_GRAPH)[0];
-    if (!leaf) { leaf = workspace.getLeaf("tab"); await leaf.setViewState({ type: VIEW_TYPE_QMD_GRAPH, active: true }); }
-    await workspace.revealLeaf(leaf);   // await: revealLeaf returns Promise (1.7.2); guarantees the leaf is loaded, not deferred
-    return leaf;
   }
 
   async loadSettings(): Promise<void> { this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()); }

@@ -3,11 +3,10 @@ export interface QmdSettings {
   daemonPort: number;             // HTTP daemon port
   vaultCollectionName: string;    // qmd collection name for this vault
   mask: string;                   // glob for vault indexing
-  externalCollections: string[];  // extra collections to include in search/graph
+  externalCollections: string[];  // extra collections to include in search
   rerank: boolean;                // LLM rerank on explicit search
   debounceMs: number;             // on-save reindex debounce
-  graphTopK: number;              // focus-graph neighbor count
-  graphMinScore: number;          // focus-graph min similarity
+  relatedMinScore: number;        // related-notes min similarity
   relatedTopK: number;            // related-notes panel neighbor count
   searchMode: "keyword" | "hybrid"; // search-panel mode (persisted toggle)
   searchDebounceMs: number;       // keyword as-you-type debounce
@@ -24,8 +23,7 @@ export const DEFAULT_SETTINGS: QmdSettings = {
   externalCollections: [],
   rerank: true,
   debounceMs: 1500,
-  graphTopK: 12,
-  graphMinScore: 0.3,
+  relatedMinScore: 0.3,
   relatedTopK: 8,
   searchMode: "hybrid",
   searchDebounceMs: 300,
