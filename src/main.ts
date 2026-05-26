@@ -10,6 +10,7 @@ import { SearchView, VIEW_TYPE_QMD_SEARCH } from "./views/search-view";
 import { FocusGraphView, VIEW_TYPE_QMD_GRAPH } from "./views/focus-graph-view";
 import { RelatedNotesView, VIEW_TYPE_QMD_RELATED } from "./views/related-notes-view";
 import { QmdSearchModal } from "./views/search-modal";
+import { QmdLinkSuggest } from "./views/link-suggest-view";
 import { spawn } from "node:child_process";
 import { platformSpawnOptions } from "./spawn-opts";
 
@@ -37,6 +38,10 @@ export default class QmdPlugin extends Plugin {
     this.addRibbonIcon("search", "qmd Search", () => this.activateSearchView());
     this.addCommand({ id: "open-qmd-search", name: "Open qmd search panel", callback: () => this.activateSearchView() });
     this.addCommand({ id: "open-qmd-search-modal", name: "Search qmd (modal)", callback: () => new QmdSearchModal(this.app, this.client, this.settings).open() });
+    // Semantic @@ link suggester (non-[[ trigger: the built-in [[ suggester claims any [[... context).
+    // Passes current client/settings, same as the search surfaces;
+    // the daemon URL is only re-read on a settings change after a reload (matches the views' behavior).
+    this.registerEditorSuggest(new QmdLinkSuggest(this.app, this.client, this.settings));
     this.registerView(VIEW_TYPE_QMD_GRAPH, (leaf: WorkspaceLeaf) => new FocusGraphView(leaf, this.client, this.settings));
     this.addRibbonIcon("git-fork", "qmd Focus graph", () => { void this.activateGraphView(); });
     this.addCommand({ id: "open-qmd-focus-graph", name: "Open focus graph for current note", callback: () => this.activateGraphView() });
