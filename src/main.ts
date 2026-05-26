@@ -9,6 +9,7 @@ import { makeRunQmd } from "./cli";
 import { SearchView, VIEW_TYPE_QMD_SEARCH } from "./views/search-view";
 import { FocusGraphView, VIEW_TYPE_QMD_GRAPH } from "./views/focus-graph-view";
 import { RelatedNotesView, VIEW_TYPE_QMD_RELATED } from "./views/related-notes-view";
+import { QmdSearchModal } from "./views/search-modal";
 import { spawn } from "node:child_process";
 import { platformSpawnOptions } from "./spawn-opts";
 
@@ -35,6 +36,7 @@ export default class QmdPlugin extends Plugin {
     this.registerView(VIEW_TYPE_QMD_SEARCH, (leaf: WorkspaceLeaf) => new SearchView(leaf, this.client, this.settings, () => this.saveSettings()));
     this.addRibbonIcon("search", "qmd Search", () => this.activateSearchView());
     this.addCommand({ id: "open-qmd-search", name: "Open qmd search panel", callback: () => this.activateSearchView() });
+    this.addCommand({ id: "open-qmd-search-modal", name: "Search qmd (modal)", callback: () => new QmdSearchModal(this.app, this.client, this.settings).open() });
     this.registerView(VIEW_TYPE_QMD_GRAPH, (leaf: WorkspaceLeaf) => new FocusGraphView(leaf, this.client, this.settings));
     this.addRibbonIcon("git-fork", "qmd Focus graph", () => { void this.activateGraphView(); });
     this.addCommand({ id: "open-qmd-focus-graph", name: "Open focus graph for current note", callback: () => this.activateGraphView() });
