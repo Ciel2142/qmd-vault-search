@@ -24,8 +24,17 @@ describe("parseLinkTrigger", () => {
   });
 
   it("does not match when the partial contains a bracket", () => {
-    // The `[` is excluded from the partial, so `$` is never reached → no trigger.
+    // The partial `[^\[\]]*` stops at the inner `[`, so the match can't reach `$` → no trigger.
     expect(parseLinkTrigger("[[?a[b")).toBeNull();
+  });
+
+  it("keeps whitespace inside the partial query", () => {
+    expect(parseLinkTrigger("[[?foo bar")).toEqual({ query: "foo bar", startCh: 0 });
+  });
+
+  it("selects the rightmost [[? when an earlier one precedes it on the line", () => {
+    // The leftmost [[? can't reach `$` (blocked by the inner `[`), so the engine advances.
+    expect(parseLinkTrigger("x [[?one [[?two")).toEqual({ query: "two", startCh: 9 });
   });
 });
 
