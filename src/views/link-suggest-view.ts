@@ -4,6 +4,7 @@ import type { QmdClient, QmdSearchResult, QmdSubQuery } from "../qmd-client";
 import type { QmdSettings } from "../settings";
 import { parseLinkTrigger, planLinkQuery } from "../link-suggest";
 import { makeVaultResolver } from "../vault-resolver";
+import { resolveOpenTarget } from "../open-target";
 import { cleanSnippet } from "../clean-snippet";
 
 /** A qmd vault-collection hit plus the real vault TFile it resolved to. */
@@ -13,9 +14,11 @@ export interface LinkSuggestion {
 }
 
 /**
- * Semantic `[[?` link suggester. Typing `[[?<text>` opens a vec-only suggester
+ * Semantic `@@` link suggester. Typing `@@<text>` opens a vec-only suggester
  * over the vault collection; choosing a hit inserts a normal `[[wikilink]]`.
- * Complements Obsidian's built-in `[[` filename suggester (plain `[[` is untouched).
+ * Uses `@@` (not `[[`) because Obsidian's built-in `[[` suggester claims any
+ * `[[...` context, so a custom suggester there never shows (confirmed by smoke);
+ * `@@` leaves the built-in untouched and lets this popup win.
  * Long-lived (registered once); mirrors the search modal's debounce + searchId stale-guard.
  */
 export class QmdLinkSuggest extends EditorSuggest<LinkSuggestion> {
@@ -60,9 +63,11 @@ export class QmdLinkSuggest extends EditorSuggest<LinkSuggestion> {
       if (id !== this.searchId) { resolve([]); return; } // superseded
       const out: LinkSuggestion[] = [];
       for (const result of results) {
-        const vaultPath = resolveVaultPath(result.file);
-        if (!vaultPath) continue; // hit is not a vault file → not [[-linkable, drop it
-        const file = this.app.vault.getAbstractFileByPath(vaultPath);
+        // qmd prefixes paths with the collection name (`vault/...`) and slugs spaces to hyphens;
+        // resolveOpenTarget strips the prefix + reverses the slug. External-collection hits aren't [[-linkable.
+        const target = resolveOpenTarget(result.file, result.docid, resolveVaultPath, this.settings.vaultCollectionName);
+        if (target.kind !== "vault") continue;
+        const file = this.app.vault.getAbstractFileByPath(target.path);
         if (file instanceof TFile) out.push({ result, file });
       }
       resolve(out);
