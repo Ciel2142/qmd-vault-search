@@ -1,4 +1,4 @@
-import { App, Modal, Notice, Setting, TAbstractFile, TFolder } from "obsidian";
+import { App, ButtonComponent, Modal, Notice, Setting, TAbstractFile, TFolder } from "obsidian";
 import type { RunQmd } from "../indexer";
 import { vaultVirtualPath, readContext, setContext, removeContext } from "../qmd-context";
 
@@ -34,21 +34,23 @@ export class ContextModal extends Modal {
     textarea.disabled = true;
     textarea.setAttribute("aria-label", "qmd context summary");
 
-    let removeBtn: HTMLButtonElement | null = null;
-    let saveBtn: HTMLButtonElement | null = null;
+    let removeBtn: ButtonComponent | null = null;
+    let saveBtn: ButtonComponent | null = null;
     new Setting(contentEl)
       .addButton((b) => {
-        removeBtn = b.setButtonText("Remove").buttonEl;
+        removeBtn = b.setButtonText("Remove");
         b.onClick(() => void this.runAndClose(() => removeContext(this.deps.runQmd, this.virtualPath), removeBtn, saveBtn, "removed"));
-        removeBtn.hide();
+        b.buttonEl.hide();
       })
       .addButton((b) => {
-        saveBtn = b.setButtonText("Save").setCta().buttonEl;
-        b.setDisabled(true);
+        saveBtn = b.setButtonText("Save").setCta().setDisabled(true);
         b.onClick(() => void this.runAndClose(() => setContext(this.deps.runQmd, this.virtualPath, textarea.value.trim()), removeBtn, saveBtn, "saved"));
       });
 
-    textarea.addEventListener("input", () => { if (saveBtn) saveBtn.disabled = textarea.value.trim() === ""; });
+    // Toggle via setDisabled (the ButtonComponent), not buttonEl.disabled: Obsidian's
+    // click handler is gated on the component's `disabled` flag, so poking the raw DOM
+    // property leaves the button looking active (CTA) while silently swallowing clicks.
+    textarea.addEventListener("input", () => saveBtn?.setDisabled(textarea.value.trim() === ""));
 
     void readContext(this.deps.runQmd, this.deps.collection, this.deps.file.path, this.isRoot)
       .then((cur) => {
@@ -57,8 +59,8 @@ export class ContextModal extends Modal {
         textarea.placeholder = "Describe what this file/folder contains…";
         if (cur !== null) {
           textarea.value = cur;
-          removeBtn?.show();
-          if (saveBtn) saveBtn.disabled = cur.trim() === "";
+          removeBtn?.buttonEl.show();
+          saveBtn?.setDisabled(cur.trim() === "");
         }
       })
       .catch(() => {
@@ -71,12 +73,12 @@ export class ContextModal extends Modal {
 
   private async runAndClose(
     op: () => Promise<{ ok: boolean; error?: string }>,
-    removeBtn: HTMLButtonElement | null,
-    saveBtn: HTMLButtonElement | null,
+    removeBtn: ButtonComponent | null,
+    saveBtn: ButtonComponent | null,
     verb: string,
   ): Promise<void> {
-    if (removeBtn) removeBtn.disabled = true;
-    if (saveBtn) saveBtn.disabled = true;
+    removeBtn?.setDisabled(true);
+    saveBtn?.setDisabled(true);
     const res = await op();
     new Notice(res.ok ? `qmd context ${verb}` : `qmd context: ${res.error}`);
     this.close();
