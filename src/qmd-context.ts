@@ -39,3 +39,17 @@ export function parseContextList(stdout: string): ContextEntry[] {
   }
   return entries;
 }
+
+/** Read the current context summary for a vault path, or null. Never throws. */
+export async function readContext(
+  runQmd: RunQmd,
+  collection: string,
+  relPath: string,
+  isRoot: boolean,
+): Promise<string | null> {
+  const target = isRoot ? "" : relPath;
+  const res = await runQmd(["context", "list"]);
+  if (res.code !== 0) return null;
+  const match = parseContextList(res.stdout).find((e) => e.collection === collection && e.path === target);
+  return match ? match.context : null;
+}

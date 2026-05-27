@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { vaultVirtualPath, parseContextList } from "../src/qmd-context";
+import { vaultVirtualPath, parseContextList, readContext } from "../src/qmd-context";
 
 describe("vaultVirtualPath", () => {
   it("maps a file to a virtual path", () => {
@@ -45,5 +45,34 @@ describe("parseContextList", () => {
   it("does not throw on a malformed block (path with no following context)", () => {
     const out = ["vault", "  Orphan/path.md", "qmd", "  / (root)", "    ok"].join("\n");
     expect(parseContextList(out)).toEqual([{ collection: "qmd", path: "", context: "ok" }]);
+  });
+});
+
+import { vi } from "vitest";
+
+function runnerReturning(code: number, stdout: string) {
+  const calls: string[][] = [];
+  const run = vi.fn(async (args: string[]) => { calls.push(args); return { code, stdout, stderr: "" }; });
+  return { run, calls };
+}
+
+describe("readContext", () => {
+  it("returns the matching summary for a file path", async () => {
+    const { run, calls } = runnerReturning(0, SAMPLE);
+    const got = await readContext(run, "vault", "Projects/note.md", false);
+    expect(got).toBe("Spec for feature X.");
+    expect(calls[0]).toEqual(["context", "list"]);
+  });
+  it("returns the root summary when isRoot", async () => {
+    const { run } = runnerReturning(0, SAMPLE);
+    expect(await readContext(run, "vault", "/", true)).toBe("Whole-vault summary.");
+  });
+  it("returns null when the path has no context", async () => {
+    const { run } = runnerReturning(0, SAMPLE);
+    expect(await readContext(run, "vault", "Nope.md", false)).toBeNull();
+  });
+  it("returns null when qmd exits non-zero", async () => {
+    const { run } = runnerReturning(-1, "");
+    expect(await readContext(run, "vault", "Projects/note.md", false)).toBeNull();
   });
 });
