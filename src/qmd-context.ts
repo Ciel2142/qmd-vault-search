@@ -11,11 +11,15 @@ export interface QmdResult {
   error?: string;
 }
 
-/** Build the qmd virtual path for a vault file/folder. Root folder → collection root. */
+/**
+ * Build the qmd virtual path for a vault file/folder. Root folder → collection root.
+ * @param relPath a non-empty vault-relative path (e.g. "Projects/note.md"); ignored when isRoot.
+ */
 export function vaultVirtualPath(collection: string, relPath: string, isRoot: boolean): string {
   return isRoot ? `qmd://${collection}/` : `qmd://${collection}/${relPath}`;
 }
 
+// qmd's contextList() prints a fixed layout: collection at 0-space indent, path at 2, context at 4.
 /** Parse `qmd context list` stdout into entries. Tolerates the banner + blanks; never throws. */
 export function parseContextList(stdout: string): ContextEntry[] {
   const entries: ContextEntry[] = [];
@@ -48,6 +52,7 @@ export async function readContext(
   isRoot: boolean,
 ): Promise<string | null> {
   const target = isRoot ? "" : relPath;
+  // "qmd context list" takes no per-path filter, so fetch all entries and match locally.
   const res = await runQmd(["context", "list"]);
   if (res.code !== 0) return null;
   const match = parseContextList(res.stdout).find((e) => e.collection === collection && e.path === target);

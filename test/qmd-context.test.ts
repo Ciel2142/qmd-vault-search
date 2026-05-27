@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { vaultVirtualPath, parseContextList, readContext, setContext, removeContext } from "../src/qmd-context";
 
 describe("vaultVirtualPath", () => {
@@ -47,8 +47,6 @@ describe("parseContextList", () => {
     expect(parseContextList(out)).toEqual([{ collection: "qmd", path: "", context: "ok" }]);
   });
 });
-
-import { vi } from "vitest";
 
 function runnerReturning(code: number, stdout: string) {
   const calls: string[][] = [];
@@ -100,5 +98,9 @@ describe("removeContext", () => {
     const { run, calls } = recordingRunner(0);
     expect(await removeContext(run, "qmd://vault/x.md")).toEqual({ ok: true });
     expect(calls[0]).toEqual(["context", "rm", "qmd://vault/x.md"]);
+  });
+  it("reports the stderr on failure", async () => {
+    const { run } = recordingRunner(1, "no such context");
+    expect(await removeContext(run, "qmd://vault/x.md")).toEqual({ ok: false, error: "no such context" });
   });
 });
