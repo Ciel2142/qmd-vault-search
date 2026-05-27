@@ -11,6 +11,7 @@ import { RelatedNotesView, VIEW_TYPE_QMD_RELATED } from "./views/related-notes-v
 import { QmdSearchModal } from "./views/search-modal";
 import { QmdLinkSuggest } from "./views/link-suggest-view";
 import { ContextModal } from "./views/context-modal";
+import { DaemonStatusBar } from "./views/daemon-status-bar";
 import { spawn } from "node:child_process";
 import { platformSpawnOptions } from "./spawn-opts";
 
@@ -20,6 +21,7 @@ export default class QmdPlugin extends Plugin {
   daemon!: DaemonController;
   indexer!: Indexer;
   runQmd!: RunQmd;
+  statusBar!: DaemonStatusBar;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -76,6 +78,18 @@ export default class QmdPlugin extends Plugin {
     // Daemon: probe, offer to start.
     const status = await this.daemon.ensureRunning();
     if (status === "started") new Notice("qmd daemon not running — starting it. Give it a few seconds to load models.");
+
+    // Status-bar indicator + manual start. Polls health so it also tracks the daemon dying mid-session.
+    this.statusBar = new DaemonStatusBar({
+      el: this.addStatusBarItem(),
+      port: this.settings.daemonPort,
+      health: () => this.client.health(),
+      start: () => this.daemon.start(),
+      notify: (m) => new Notice(m),
+    });
+    void this.statusBar.refresh();
+    this.registerInterval(window.setInterval(() => void this.statusBar.refresh(), 10_000));
+    this.addCommand({ id: "start-qmd-daemon", name: "Start qmd daemon", callback: () => void this.statusBar.startDaemon() });
 
     // Vault freshness: register on first run, reindex on save.
     if (this.settings.autoReindex && vaultPath) {

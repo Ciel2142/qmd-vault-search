@@ -45,3 +45,11 @@
 .qmd-match-line { flex: 0 0 auto; min-width: 30px; text-align: right; font-family: var(--font-monospace); font-size: var(--font-ui-smaller); color: var(--text-faint); }
 .qmd-match-text { font-size: var(--font-ui-smaller); color: var(--text-muted); white-space: pre-wrap; }
 .qmd-hl { background: var(--text-highlight-bg); color: var(--text-normal); border-radius: 2px; }
+
+/* Daemon status-bar indicator */
+.qmd-daemon-status { font-size: var(--font-ui-smaller); }
+.qmd-daemon-status.mod-clickable { cursor: pointer; }
+.qmd-daemon-up { color: var(--color-green); }
+.qmd-daemon-down { color: var(--text-faint); }
+.qmd-daemon-starting { color: var(--color-yellow); }
+.qmd-daemon-unknown { color: var(--text-muted); }
