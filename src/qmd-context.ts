@@ -15,3 +15,27 @@ export interface QmdResult {
 export function vaultVirtualPath(collection: string, relPath: string, isRoot: boolean): string {
   return isRoot ? `qmd://${collection}/` : `qmd://${collection}/${relPath}`;
 }
+
+/** Parse `qmd context list` stdout into entries. Tolerates the banner + blanks; never throws. */
+export function parseContextList(stdout: string): ContextEntry[] {
+  const entries: ContextEntry[] = [];
+  let collection = "";
+  let pendingPath: string | null = null;
+  for (const raw of stdout.split("\n")) {
+    if (raw.trim() === "") continue;
+    const indent = raw.length - raw.trimStart().length;
+    const text = raw.trim();
+    if (indent === 0) {
+      if (text === "Configured Contexts") continue;
+      if (text.startsWith("No contexts configured")) continue;
+      collection = text;
+      pendingPath = null;
+    } else if (indent <= 2) {
+      pendingPath = text === "/ (root)" ? "" : text;
+    } else if (pendingPath !== null && collection) {
+      entries.push({ collection, path: pendingPath, context: text });
+      pendingPath = null;
+    }
+  }
+  return entries;
+}
