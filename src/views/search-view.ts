@@ -27,7 +27,7 @@ export class SearchView extends ItemView {
   }
 
   getViewType(): string { return VIEW_TYPE_QMD_SEARCH; }
-  getDisplayText(): string { return "qmd Search"; }
+  getDisplayText(): string { return "qmd Vault Search"; }
   getIcon(): string { return "search"; }
 
   async onOpen(): Promise<void> {
