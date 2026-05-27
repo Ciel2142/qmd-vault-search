@@ -18,7 +18,7 @@ export interface QmdSettings {
 export const DEFAULT_SETTINGS: QmdSettings = {
   binaryPath: "qmd",
   daemonPort: 8181,
-  vaultCollectionName: "vault",
+  vaultCollectionName: "",
   mask: "**/*.md",
   externalCollections: [],
   rerank: true,
@@ -34,4 +34,16 @@ export const DEFAULT_SETTINGS: QmdSettings = {
 
 export function baseUrl(s: Pick<QmdSettings, "daemonPort">): string {
   return `http://localhost:${s.daemonPort}`;
+}
+
+/** Slug a vault folder name into a qmd collection name: vault_<slug>. */
+export function deriveCollectionName(vaultName: string): string {
+  const slug = vaultName.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return slug ? `vault_${slug}` : "vault";
+}
+
+/** Resolve the effective collection name: explicit/persisted wins; else fresh→derive, existing→legacy "vault". */
+export function resolveVaultCollectionName(args: { savedName: string; hadSavedData: boolean; vaultName: string }): string {
+  if (args.savedName) return args.savedName;
+  return args.hadSavedData ? "vault" : deriveCollectionName(args.vaultName);
 }
