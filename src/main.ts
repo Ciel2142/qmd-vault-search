@@ -1,5 +1,5 @@
 import { Plugin, Notice, FileSystemAdapter, WorkspaceLeaf, requestUrl, TAbstractFile } from "obsidian";
-import { DEFAULT_SETTINGS, QmdSettings, baseUrl } from "./settings";
+import { DEFAULT_SETTINGS, QmdSettings, baseUrl, resolveVaultCollectionName } from "./settings";
 import { QmdSettingTab } from "./settings-tab";
 import { QmdClient } from "./qmd-client";
 import { makeRequestUrlFetch } from "./request-url-fetch";
@@ -114,7 +114,17 @@ export default class QmdPlugin extends Plugin {
     await workspace.revealLeaf(leaf);
   }
 
-  async loadSettings(): Promise<void> { this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()); }
+  async loadSettings(): Promise<void> {
+    const saved = (await this.loadData()) as Partial<QmdSettings> | null;
+    const merged = Object.assign({}, DEFAULT_SETTINGS, saved);
+    const vaultCollectionName = resolveVaultCollectionName({
+      savedName: merged.vaultCollectionName,
+      hadSavedData: saved != null,
+      vaultName: this.app.vault.getName(),
+    });
+    this.settings = { ...merged, vaultCollectionName };
+    if (vaultCollectionName !== merged.vaultCollectionName) await this.saveData(this.settings);
+  }
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
     this.client = new QmdClient({ baseUrl: baseUrl(this.settings), fetchFn: makeRequestUrlFetch(requestUrl) });
