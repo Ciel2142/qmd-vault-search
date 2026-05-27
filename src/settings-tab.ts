@@ -15,7 +15,7 @@ export class QmdSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Daemon port").setDesc("Port of the qmd HTTP daemon.")
       .addText((t) => t.setValue(String(this.plugin.settings.daemonPort)).onChange(async (v) => { const n = parseInt(v, 10); if (!Number.isNaN(n)) { this.plugin.settings.daemonPort = n; await this.plugin.saveSettings(); } }));
 
-    new Setting(containerEl).setName("Vault collection name").setDesc("qmd collection name for this vault. Defaults to vault_<vault name>; clear to reset.")
+    new Setting(containerEl).setName("Vault collection name").setDesc("qmd collection name for this vault. Defaults to vault_<vault name>; clear to reset to that default.")
       .addText((t) => t.setValue(this.plugin.settings.vaultCollectionName).onChange(async (v) => { this.plugin.settings.vaultCollectionName = v.trim() || deriveCollectionName(this.app.vault.getName()); await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("External collections").setDesc("Comma-separated qmd collection names to include. Or use \"Detect collections\" below to pick from the running daemon.")

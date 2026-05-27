@@ -31,6 +31,11 @@ describe("deriveCollectionName", () => {
     expect(deriveCollectionName("")).toBe("vault");
     expect(deriveCollectionName("日本語")).toBe("vault");
   });
+  it("caps very long names (vault_ + slug <= 64 chars)", () => {
+    const out = deriveCollectionName("a".repeat(100));
+    expect(out).toBe("vault_" + "a".repeat(58));
+    expect(out.length).toBe(64);
+  });
 });
 
 describe("resolveVaultCollectionName", () => {
@@ -42,5 +47,8 @@ describe("resolveVaultCollectionName", () => {
   });
   it("keeps legacy 'vault' for an existing install with an empty name", () => {
     expect(resolveVaultCollectionName({ savedName: "", hadSavedData: true, vaultName: "My Notes" })).toBe("vault");
+  });
+  it("a fresh install with a non-Latin vault name falls back to 'vault'", () => {
+    expect(resolveVaultCollectionName({ savedName: "", hadSavedData: false, vaultName: "日本語" })).toBe("vault");
   });
 });
