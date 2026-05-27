@@ -6,6 +6,7 @@ Search your vault and external [qmd](https://www.npmjs.com/package/@tobilu/qmd) 
 - **Quick search modal** — search from the command palette without opening a panel.
 - **Related notes** — a side panel that shows notes semantically similar to the one you're reading.
 - **Semantic link suggestions** — type `@@` in a note to get suggested links by meaning, not just filename.
+- **qmd context summaries** — right-click any file or folder to attach a human-written summary that tells qmd what it contains.
 - **Auto-indexing** — your vault is indexed and embedded automatically, and re-indexed when you edit.
 
 > **Desktop only.** The plugin launches the local `qmd` engine as a child process, so it does not run on Obsidian mobile.
@@ -121,8 +122,23 @@ You don't need to run any `qmd` commands by hand — the plugin manages the daem
 | Command palette → **Search qmd (modal)** | Quick search in a pop-up modal. |
 | Command palette → **Open related notes panel** | Same as the list ribbon icon. |
 | Type **`@@`** in a note | Semantic link suggestions — pick one to insert a `[[wikilink]]`. |
+| Right-click a file/folder → **Set qmd context…** | Attach / edit / remove a human-written summary for that path (see below). |
+| Command palette → **Set qmd context for current file** | Same, for the active note. |
 
 > Tip: assign hotkeys to the commands in **Settings → Hotkeys** (search "qmd").
+
+---
+
+## qmd context summaries
+
+qmd lets you attach a short, human-written **context summary** to a file, a folder, or your whole vault. The summary tells qmd's search what that path is about — it's the `qmd context add` CLI command surfaced in Obsidian.
+
+**To set one:** right-click a file or folder in the file explorer → **Set qmd context…** (or run the command **Set qmd context for current file**). A box opens, pre-filled with the current summary if there is one. Type a sentence or two describing the path and click **Save**; **Remove** deletes it.
+
+- A summary on a **folder** applies to everything under it; on a **file**, to that file; on the **vault root**, to the whole collection.
+- Setting a context does **not** re-embed your vault — it's a small config change.
+- If a context change doesn't seem reflected in search, reload the plugin (or restart the daemon) so the running daemon re-reads it.
+- Summaries are single-line: if you enter multiple lines, only the first is kept when you reopen the box to edit.
 
 ---
 
