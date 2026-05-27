@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { vaultVirtualPath, parseContextList, readContext } from "../src/qmd-context";
+import { vaultVirtualPath, parseContextList, readContext, setContext, removeContext } from "../src/qmd-context";
 
 describe("vaultVirtualPath", () => {
   it("maps a file to a virtual path", () => {
@@ -74,5 +74,31 @@ describe("readContext", () => {
   it("returns null when qmd exits non-zero", async () => {
     const { run } = runnerReturning(-1, "");
     expect(await readContext(run, "vault", "Projects/note.md", false)).toBeNull();
+  });
+});
+
+function recordingRunner(code: number, stderr = "") {
+  const calls: string[][] = [];
+  const run = vi.fn(async (args: string[]) => { calls.push(args); return { code, stdout: "", stderr }; });
+  return { run, calls };
+}
+
+describe("setContext", () => {
+  it("runs context add with the virtual path + text and reports ok", async () => {
+    const { run, calls } = recordingRunner(0);
+    expect(await setContext(run, "qmd://vault/Projects/note.md", "summary")).toEqual({ ok: true });
+    expect(calls[0]).toEqual(["context", "add", "qmd://vault/Projects/note.md", "summary"]);
+  });
+  it("reports the stderr on failure", async () => {
+    const { run } = recordingRunner(1, "Path is not in any indexed collection: …");
+    expect(await setContext(run, "qmd://vault/x.md", "s")).toEqual({ ok: false, error: "Path is not in any indexed collection: …" });
+  });
+});
+
+describe("removeContext", () => {
+  it("runs context rm with the virtual path", async () => {
+    const { run, calls } = recordingRunner(0);
+    expect(await removeContext(run, "qmd://vault/x.md")).toEqual({ ok: true });
+    expect(calls[0]).toEqual(["context", "rm", "qmd://vault/x.md"]);
   });
 });

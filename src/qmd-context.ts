@@ -53,3 +53,17 @@ export async function readContext(
   const match = parseContextList(res.stdout).find((e) => e.collection === collection && e.path === target);
   return match ? match.context : null;
 }
+
+function toResult(res: { code: number; stderr: string }): QmdResult {
+  return res.code === 0 ? { ok: true } : { ok: false, error: res.stderr.trim() || `qmd exited ${res.code}` };
+}
+
+/** Add/overwrite the context summary for a virtual path. */
+export async function setContext(runQmd: RunQmd, virtualPath: string, text: string): Promise<QmdResult> {
+  return toResult(await runQmd(["context", "add", virtualPath, text]));
+}
+
+/** Remove the context summary for a virtual path. */
+export async function removeContext(runQmd: RunQmd, virtualPath: string): Promise<QmdResult> {
+  return toResult(await runQmd(["context", "rm", virtualPath]));
+}
