@@ -39,8 +39,8 @@ export default class QmdPlugin extends Plugin {
     this.indexer = new Indexer({ runQmd: this.runQmd, vaultPath, collectionName: this.settings.vaultCollectionName, mask: this.settings.mask, debounceMs: this.settings.debounceMs });
 
     this.registerView(VIEW_TYPE_QMD_SEARCH, (leaf: WorkspaceLeaf) => new SearchView(leaf, this.client, this.settings, () => this.saveSettings()));
-    this.addRibbonIcon("search", "qmd Search", () => this.activateSearchView());
-    this.addCommand({ id: "open-qmd-search", name: "Open qmd search panel", callback: () => this.activateSearchView() });
+    this.addRibbonIcon("search", "qmd Vault Search", () => this.activateSearchView());
+    this.addCommand({ id: "open-qmd-search", name: "Open qmd Vault Search panel", callback: () => this.activateSearchView() });
     this.addCommand({ id: "open-qmd-search-modal", name: "Search qmd (modal)", callback: () => new QmdSearchModal(this.app, this.client, this.settings).open() });
     // Semantic @@ link suggester (non-[[ trigger: the built-in [[ suggester claims any [[... context).
     // Passes current client/settings, same as the search surfaces;
@@ -92,7 +92,7 @@ export default class QmdPlugin extends Plugin {
       const cols = await this.client.mcpStatus().then((c) => c.map((x) => x.name)).catch(() => [] as string[]);
       await this.indexer.ensureCollection(cols);
     } catch (e) {
-      console.warn("qmd-search: vault collection bootstrap:", e);
+      console.warn("qmd-vault-search: vault collection bootstrap:", e);
     }
   }
 

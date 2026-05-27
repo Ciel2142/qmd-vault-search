@@ -26,3 +26,22 @@
   width: 100%;
   resize: vertical;
 }
+
+/* Native-style grouped results (SearchView) */
+.qmd-results-head { display: flex; align-items: baseline; justify-content: space-between; margin: 4px 0 6px; }
+.qmd-results-count { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.qmd-collapse-all { font-size: var(--font-ui-smaller); color: var(--text-muted); cursor: pointer; }
+.qmd-collapse-all:hover { color: var(--text-normal); text-decoration: underline; }
+.qmd-file { margin-bottom: 2px; }
+.qmd-file-header { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: var(--radius-s); cursor: pointer; }
+.qmd-file-header:hover { background: var(--background-modifier-hover); }
+.qmd-chevron { flex: 0 0 auto; width: 10px; font-size: 10px; color: var(--text-muted); }
+.qmd-file-title { font-weight: var(--font-semibold); color: var(--text-normal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qmd-file-tag { flex: 0 0 auto; margin-left: auto; font-size: var(--font-ui-smaller); color: var(--text-faint); }
+.qmd-matches { margin: 0 0 6px 16px; border-left: 2px solid var(--background-modifier-border); }
+.qmd-file.is-collapsed .qmd-matches { display: none; }
+.qmd-match { display: flex; gap: 8px; padding: 2px 8px; border-radius: var(--radius-s); cursor: pointer; }
+.qmd-match:hover { background: var(--background-modifier-hover); }
+.qmd-match-line { flex: 0 0 auto; min-width: 30px; text-align: right; font-family: var(--font-monospace); font-size: var(--font-ui-smaller); color: var(--text-faint); }
+.qmd-match-text { font-size: var(--font-ui-smaller); color: var(--text-muted); white-space: pre-wrap; }
+.qmd-hl { background: var(--text-highlight-bg); color: var(--text-normal); border-radius: 2px; }

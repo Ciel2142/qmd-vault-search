@@ -1,7 +1,10 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import type { QmdClient } from "../qmd-client";
+import type { QmdClient, QmdSearchResult } from "../qmd-client";
 import type { QmdSettings } from "../settings";
-import { renderResultList } from "../result-list";
+import { groupResults } from "../group-results";
+import { renderGroupedResults } from "../grouped-result-list";
+import { queryTerms } from "../highlight";
+import { makeVaultResolver } from "../vault-resolver";
 import { planQuery, type SearchMode, type SearchTrigger } from "../search-plan";
 import { decideFallback } from "../search-fallback";
 
@@ -11,6 +14,7 @@ export class SearchView extends ItemView {
   private mode: SearchMode;
   private searchId = 0;
   private debounceTimer: number | null = null;
+  private collapsed = new Set<string>();
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -23,7 +27,7 @@ export class SearchView extends ItemView {
   }
 
   getViewType(): string { return VIEW_TYPE_QMD_SEARCH; }
-  getDisplayText(): string { return "qmd Search"; }
+  getDisplayText(): string { return "qmd Vault Search"; }
   getIcon(): string { return "search"; }
 
   async onOpen(): Promise<void> {
@@ -65,8 +69,21 @@ export class SearchView extends ItemView {
 
     const showIndicator = (text: string): void => { indicator.setText(text); indicator.show(); };
     const clearIndicator = (): void => { indicator.empty(); indicator.hide(); };
-    const render = (results: Parameters<typeof renderResultList>[0]["results"]): void => {
-      renderResultList({ container: list, results, app: this.app, client: this.client, emptyText: "No results.", vaultCollectionName: this.settings.vaultCollectionName });
+    const render = (results: QmdSearchResult[], terms?: string[]): void => {
+      const groups = groupResults(results, makeVaultResolver(this.app), this.settings.vaultCollectionName);
+      const hl = terms ?? (this.mode === "keyword" ? queryTerms(input.value) : []);
+      renderGroupedResults({
+        container: list,
+        groups,
+        terms: hl,
+        app: this.app,
+        client: this.client,
+        collapsed: this.collapsed,
+        emptyText: "No results.",
+        viewType: VIEW_TYPE_QMD_SEARCH,
+        hoverParent: this,
+        sourcePath: this.app.workspace.getActiveFile()?.path ?? "",
+      });
     };
     const renderError = (e: unknown): void => {
       list.empty();
@@ -79,7 +96,7 @@ export class SearchView extends ItemView {
         const results = await this.client.query({ searches: [{ type: "lex", query: input.value }], collections: [...selected], rerank: false });
         if (id !== this.searchId) return;
         showIndicator(reason === "zero" ? "Keyword results — semantic search returned nothing." : "Keyword results — semantic search failed.");
-        render(results);
+        render(results, queryTerms(input.value));
       } catch (e) {
         if (id !== this.searchId) return;
         clearIndicator();
@@ -95,6 +112,7 @@ export class SearchView extends ItemView {
       if (plan.kind === "clear") { clearIndicator(); list.empty(); return; }
 
       const id = ++this.searchId;
+      this.collapsed.clear();
       clearIndicator();
       list.empty();
       list.createDiv({ cls: "qmd-status", text: "Searching…" });

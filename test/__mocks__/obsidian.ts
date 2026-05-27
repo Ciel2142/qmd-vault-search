@@ -8,4 +8,5 @@ export class Setting {}
 export class Notice { constructor(_msg: string) {} }
 export class TFile {}
 export class WorkspaceLeaf {}
+export class MarkdownView {}
 export const MarkdownRenderer = { render: async () => {} };
