@@ -14,6 +14,7 @@ export class ContextModal extends Modal {
   private readonly deps: ContextModalDeps;
   private readonly isRoot: boolean;
   private readonly virtualPath: string;
+  private closed = false;
 
   constructor(deps: ContextModalDeps) {
     super(deps.app);
@@ -24,13 +25,14 @@ export class ContextModal extends Modal {
 
   onOpen(): void {
     const { contentEl } = this;
-    contentEl.createEl("h3", { text: "Set qmd context" });
+    this.setTitle("Set qmd context");
     contentEl.createEl("div", { text: this.virtualPath, cls: "qmd-context-path" });
 
     const textarea = contentEl.createEl("textarea", { cls: "qmd-context-textarea" });
     textarea.rows = 5;
     textarea.placeholder = "Loading current context…";
     textarea.disabled = true;
+    textarea.setAttribute("aria-label", "qmd context summary");
 
     let removeBtn: HTMLButtonElement | null = null;
     let saveBtn: HTMLButtonElement | null = null;
@@ -48,15 +50,23 @@ export class ContextModal extends Modal {
 
     textarea.addEventListener("input", () => { if (saveBtn) saveBtn.disabled = textarea.value.trim() === ""; });
 
-    void readContext(this.deps.runQmd, this.deps.collection, this.deps.file.path, this.isRoot).then((cur) => {
-      textarea.disabled = false;
-      textarea.placeholder = "Describe what this file/folder contains…";
-      if (cur !== null) {
-        textarea.value = cur;
-        removeBtn?.show();
-        if (saveBtn) saveBtn.disabled = cur.trim() === "";
-      }
-    });
+    void readContext(this.deps.runQmd, this.deps.collection, this.deps.file.path, this.isRoot)
+      .then((cur) => {
+        if (this.closed) return;
+        textarea.disabled = false;
+        textarea.placeholder = "Describe what this file/folder contains…";
+        if (cur !== null) {
+          textarea.value = cur;
+          removeBtn?.show();
+          if (saveBtn) saveBtn.disabled = cur.trim() === "";
+        }
+      })
+      .catch(() => {
+        if (this.closed) return;
+        textarea.disabled = false;
+        textarea.placeholder = "Could not load current context.";
+        new Notice("qmd context: failed to read current context");
+      });
   }
 
   private async runAndClose(
@@ -73,6 +83,7 @@ export class ContextModal extends Modal {
   }
 
   onClose(): void {
+    this.closed = true;
     this.contentEl.empty();
   }
 }
