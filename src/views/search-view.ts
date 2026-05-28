@@ -69,8 +69,8 @@ export class SearchView extends ItemView {
 
     const showIndicator = (text: string): void => { indicator.setText(text); indicator.show(); };
     const clearIndicator = (): void => { indicator.empty(); indicator.hide(); };
-    const render = (results: QmdSearchResult[], terms?: string[]): void => {
-      const groups = groupResults(results, makeVaultResolver(this.app), this.settings.vaultCollectionName);
+    const render = (results: QmdSearchResult[], resolveVaultPath: ReturnType<typeof makeVaultResolver>, terms?: string[]): void => {
+      const groups = groupResults(results, resolveVaultPath, this.settings.vaultCollectionName);
       const hl = terms ?? (this.mode === "keyword" ? queryTerms(input.value) : []);
       renderGroupedResults({
         container: list,
@@ -91,12 +91,12 @@ export class SearchView extends ItemView {
     };
 
     // Keyword fallback re-run for the hybrid path ─────────────
-    const runFallback = async (id: number, reason: "zero" | "failure"): Promise<void> => {
+    const runFallback = async (id: number, reason: "zero" | "failure", resolveVaultPath: ReturnType<typeof makeVaultResolver>): Promise<void> => {
       try {
         const results = await this.client.query({ searches: [{ type: "lex", query: input.value }], collections: [...selected], rerank: false });
         if (id !== this.searchId) return;
         showIndicator(reason === "zero" ? "Keyword results — semantic search returned nothing." : "Keyword results — semantic search failed.");
-        render(results, queryTerms(input.value));
+        render(results, resolveVaultPath, queryTerms(input.value));
       } catch (e) {
         if (id !== this.searchId) return;
         clearIndicator();
@@ -117,19 +117,22 @@ export class SearchView extends ItemView {
       list.empty();
       list.createDiv({ cls: "qmd-status", text: "Searching…" });
       const rerank = mode === "hybrid" ? this.settings.rerank : false;
+      // Build the vault slug-map once per search: the vault does not change mid-search,
+      // and keyword mode re-renders per debounced keystroke (bd 2fb).
+      const resolveVaultPath = makeVaultResolver(this.app);
       try {
         const results = await this.client.query({ searches: plan.searches, collections: [...selected], rerank });
         if (id !== this.searchId) return;
         if (mode === "hybrid") {
           const fb = decideFallback({ errored: false, resultCount: results.length }, this.settings);
-          if (fb.fallback) { await runFallback(id, "zero"); return; }
+          if (fb.fallback) { await runFallback(id, "zero", resolveVaultPath); return; }
         }
-        render(results);
+        render(results, resolveVaultPath);
       } catch (e) {
         if (id !== this.searchId) return;
         if (mode === "hybrid") {
           const fb = decideFallback({ errored: true, resultCount: 0 }, this.settings);
-          if (fb.fallback) { await runFallback(id, "failure"); return; }
+          if (fb.fallback) { await runFallback(id, "failure", resolveVaultPath); return; }
         }
         renderError(e);
       }
