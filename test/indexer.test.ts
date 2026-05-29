@@ -114,3 +114,31 @@ describe("Indexer.notifyChange debounce + serialize", () => {
     expect(calls).toEqual([["update"], ["embed", "-c", "vault"]]); // exactly one run, no dirty re-run
   });
 });
+
+describe("Indexer.reindexNow()", () => {
+  it("awaits the underlying reindex and resolves on success", async () => {
+    const calls: string[][] = [];
+    const runQmd = async (args: string[]) => {
+      calls.push(args);
+      return { code: 0, stdout: "", stderr: "" };
+    };
+    const idx = new Indexer({ runQmd, vaultPath: "/v", collectionName: "vault", mask: "**/*.md", debounceMs: 10 });
+    await idx.reindexNow();
+    expect(calls).toEqual([["update"], ["embed", "-c", "vault"]]);
+  });
+
+  it("coalesces concurrent calls into one run", async () => {
+    let active = 0;
+    let maxActive = 0;
+    const runQmd = async (_args: string[]) => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((r) => setTimeout(r, 5));
+      active--;
+      return { code: 0, stdout: "", stderr: "" };
+    };
+    const idx = new Indexer({ runQmd, vaultPath: "/v", collectionName: "vault", mask: "**/*.md", debounceMs: 10 });
+    await Promise.all([idx.reindexNow(), idx.reindexNow(), idx.reindexNow()]);
+    expect(maxActive).toBeLessThanOrEqual(1);
+  });
+});

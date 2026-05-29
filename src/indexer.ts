@@ -13,6 +13,7 @@ export class Indexer {
   private running = false;
   private dirty = false;
   private disposed = false;
+  private inflight: Promise<void> | null = null;
 
   constructor(private deps: IndexerDeps) {}
 
@@ -27,7 +28,14 @@ export class Indexer {
   notifyChange(): void {
     if (this.disposed) return;
     if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => { void this.reindex(); }, this.deps.debounceMs);
+    this.timer = setTimeout(() => { void this.reindexNow(); }, this.deps.debounceMs);
+  }
+
+  /** Public entry: returns a promise that resolves when the next reindex finishes (cascaded re-runs included). */
+  reindexNow(): Promise<void> {
+    if (this.inflight) { this.dirty = true; return this.inflight; }
+    this.inflight = this.reindex().finally(() => { this.inflight = null; });
+    return this.inflight;
   }
 
   /** Serialized reindex: no overlap; a change during a run schedules one re-run. */
