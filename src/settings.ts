@@ -1,3 +1,5 @@
+import type { ScoreTier } from "./score-tier";
+
 export interface QmdSettings {
   binaryPath: string;             // command or absolute path to `qmd`
   daemonPort: number;             // HTTP daemon port
@@ -9,6 +11,7 @@ export interface QmdSettings {
   relatedMinScore: number;        // related-notes min similarity
   relatedTopK: number;            // related-notes panel neighbor count
   searchMode: "keyword" | "hybrid"; // search-panel mode (persisted toggle)
+  searchMinTier: ScoreTier;       // search-panel minimum relevance floor (hybrid+rerank only)
   searchDebounceMs: number;       // keyword as-you-type debounce
   fallbackOnFailure: boolean;     // hybrid errors → retry as keyword
   fallbackOnZero: boolean;        // hybrid 0 results → retry as keyword
@@ -26,6 +29,7 @@ export const DEFAULT_SETTINGS: QmdSettings = {
   relatedMinScore: 0.3,
   relatedTopK: 8,
   searchMode: "hybrid",
+  searchMinTier: "low",
   searchDebounceMs: 300,
   fallbackOnFailure: true,
   fallbackOnZero: false,
