@@ -3,6 +3,7 @@ import type { QmdClient } from "./qmd-client";
 import type { FileGroup } from "./group-results";
 import { openResolvedTarget } from "./open-action";
 import { highlightTerms } from "./highlight";
+import { scoreTier, tierLabel } from "./score-tier";
 
 export interface RenderGroupedOptions {
   container: HTMLElement;
@@ -11,6 +12,7 @@ export interface RenderGroupedOptions {
   app: App;
   client: QmdClient;
   collapsed: Set<string>;    // group keys currently collapsed (mutated as the user folds)
+  showTiers?: boolean;       // paint the HIGH/MED/LOW badge per file group
   emptyText: string;
   viewType: string;          // hover-link `source`
   hoverParent: Component;    // hover-link `hoverParent` (the SearchView)
@@ -25,7 +27,7 @@ interface FileItem {
 
 /** Render qmd results grouped by file, native-search style. Used only by SearchView. */
 export function renderGroupedResults(opts: RenderGroupedOptions): void {
-  const { container, groups, terms, app, client, collapsed, emptyText, viewType, hoverParent, sourcePath } = opts;
+  const { container, groups, terms, app, client, collapsed, showTiers, emptyText, viewType, hoverParent, sourcePath } = opts;
   container.empty();
   if (groups.length === 0) {
     container.createDiv({ cls: "qmd-status", text: emptyText });
@@ -54,6 +56,10 @@ export function renderGroupedResults(opts: RenderGroupedOptions): void {
     const chevron = header.createSpan({ cls: "qmd-chevron" });
     header.createSpan({ cls: "qmd-file-title", text: group.title });
     header.createSpan({ cls: "qmd-file-tag", text: group.tag });
+    if (showTiers) {
+      const tier = scoreTier(group.topScore);
+      header.createSpan({ cls: `qmd-tier-badge qmd-tier-${tier}`, text: tierLabel(tier) });
+    }
 
     const matchesEl = fileEl.createDiv({ cls: "qmd-matches" });
     for (const m of group.matches) {
