@@ -51,4 +51,14 @@ describe("groupResults", () => {
   it("returns [] for no results", () => {
     expect(groupResults([], vaultResolver, "vault")).toEqual([]);
   });
+
+  it("threads score into each match and exposes the file's top score", () => {
+    const results = [
+      r({ file: "vault/a.md", docid: "#1", score: 0.42 }),
+      r({ file: "vault/a.md", docid: "#2", score: 0.81 }),
+    ];
+    const groups = groupResults(results, () => null, "vault");
+    expect(groups[0].matches.map((m) => m.score)).toEqual([0.42, 0.81]);
+    expect(groups[0].topScore).toBe(0.81);
+  });
 });

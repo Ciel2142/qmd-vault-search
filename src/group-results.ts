@@ -6,6 +6,7 @@ export interface ResultMatch {
   line: number;
   docid: string;
   context: string;
+  score: number;
 }
 
 export interface FileGroup {
@@ -13,6 +14,7 @@ export interface FileGroup {
   target: OpenTarget; // resolved once per file
   title: string;      // r.title || filename(file)
   tag: string;        // "vault" for vault files; else the collection prefix (first path segment)
+  topScore: number;   // max score among matches; drives the tier badge
   matches: ResultMatch[];
 }
 
@@ -32,11 +34,13 @@ export function groupResults(
         target,
         title: result.title || (result.file.split("/").pop() ?? result.file),
         tag: target.kind === "vault" ? "vault" : (result.file.split("/")[0] ?? result.file),
+        topScore: result.score,
         matches: [],
       };
       byFile.set(result.file, group);
     }
-    group.matches.push({ line: result.line, docid: result.docid, context: cleanSnippet(result.snippet) });
+    group.topScore = Math.max(group.topScore, result.score);
+    group.matches.push({ line: result.line, docid: result.docid, context: cleanSnippet(result.snippet), score: result.score });
   }
   return [...byFile.values()];
 }
