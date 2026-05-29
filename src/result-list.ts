@@ -12,6 +12,8 @@ export interface RenderResultListOptions {
   client: QmdClient;
   emptyText: string;
   vaultCollectionName: string;
+  /** Optional: reuse a resolver built once by the caller (avoids rebuilding the slug map per render). Built from `app` if omitted. */
+  resolveVaultPath?: ReturnType<typeof makeVaultResolver>;
 }
 
 /** Render a list of qmd results. Shared by SearchView and RelatedNotesView. */
@@ -22,7 +24,7 @@ export function renderResultList(opts: RenderResultListOptions): void {
     container.createDiv({ cls: "qmd-status", text: emptyText });
     return;
   }
-  const resolveVaultPath = makeVaultResolver(app);
+  const resolveVaultPath = opts.resolveVaultPath ?? makeVaultResolver(app);
   for (const [i, r] of results.entries()) {
     const row = container.createDiv({ cls: "qmd-result" });
     const target = resolveOpenTarget(r.file, r.docid, resolveVaultPath, vaultCollectionName);
