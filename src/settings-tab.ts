@@ -27,9 +27,6 @@ export class QmdSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Reindex on save").setDesc("Incrementally reindex the vault after edits.")
       .addToggle((t) => t.setValue(this.plugin.settings.autoReindex).onChange(async (v) => { this.plugin.settings.autoReindex = v; await this.plugin.saveSettings(); }));
 
-    new Setting(containerEl).setName("Auto-reindex after pull (obsidian-git)").setDesc("When obsidian-git pulls, reindex this vault. Requires the obsidian-git plugin.")
-      .addToggle((t) => t.setValue(this.plugin.settings.gitAutoReindex).onChange(async (v) => { this.plugin.settings.gitAutoReindex = v; await this.plugin.saveSettings(); }));
-
     new Setting(containerEl).setName("Reindex debounce (ms)").setDesc("Idle delay before reindexing after edits.")
       .addText((t) => t.setValue(String(this.plugin.settings.debounceMs)).onChange(async (v) => { const n = parseInt(v, 10); if (!Number.isNaN(n)) { this.plugin.settings.debounceMs = n; await this.plugin.saveSettings(); } }));
 
