@@ -5,7 +5,7 @@ export type ScoreTier = "high" | "med" | "low";
 /** Control order, highest floor first. */
 export const TIERS: ScoreTier[] = ["high", "med", "low"];
 
-/** qmd CLI parity: green > 0.7 (HIGH), yellow > 0.4 (MED), dim otherwise (LOW). Uses >= at the boundary. */
+/** qmd parity: qmd's CLI colors green/yellow/dim above 0.7/0.4; we bucket HIGH/MED/LOW at those cutoffs with >= (so 0.7→HIGH, 0.4→MED, else LOW). */
 export function scoreTier(score: number): ScoreTier {
   if (score >= 0.7) return "high";
   if (score >= 0.4) return "med";
