@@ -14,6 +14,7 @@ export class Indexer {
   private dirty = false;
   private disposed = false;
   private inflight: Promise<void> | null = null;
+  private lastReindexAtMs = 0;
 
   constructor(private deps: IndexerDeps) {}
 
@@ -38,6 +39,9 @@ export class Indexer {
     return this.inflight;
   }
 
+  /** Epoch ms when the most recent reindex finished; 0 if none yet. git-triggers reads this to skip a redundant reindex right after a manual sync or pull (spec §6.2). */
+  get lastReindexAt(): number { return this.lastReindexAtMs; }
+
   /** Serialized reindex: no overlap; a change during a run schedules one re-run. */
   private async reindex(): Promise<void> {
     if (this.disposed) return;
@@ -46,6 +50,7 @@ export class Indexer {
     try {
       await this.deps.runQmd(["update"]);
       await this.deps.runQmd(["embed", "-c", this.deps.collectionName]);
+      this.lastReindexAtMs = Date.now();
     } finally {
       this.running = false;
       if (this.dirty && !this.disposed) { this.dirty = false; await this.reindex(); }

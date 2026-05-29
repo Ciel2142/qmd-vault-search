@@ -141,4 +141,19 @@ describe("Indexer.reindexNow()", () => {
     await Promise.all([idx.reindexNow(), idx.reindexNow(), idx.reindexNow()]);
     expect(maxActive).toBeLessThanOrEqual(1);
   });
+
+  it("records lastReindexAt after a successful reindex", async () => {
+    const runQmd = async () => ({ code: 0, stdout: "", stderr: "" });
+    const idx = new Indexer({ runQmd, vaultPath: "/v", collectionName: "vault", mask: "**/*.md", debounceMs: 10 });
+    expect(idx.lastReindexAt).toBe(0);
+    await idx.reindexNow();
+    expect(idx.lastReindexAt).toBeGreaterThan(0);
+  });
+
+  it("does not update lastReindexAt when reindex fails", async () => {
+    const runQmd = async () => { throw new Error("qmd update failed"); };
+    const idx = new Indexer({ runQmd, vaultPath: "/v", collectionName: "vault", mask: "**/*.md", debounceMs: 10 });
+    await idx.reindexNow().catch(() => {});
+    expect(idx.lastReindexAt).toBe(0);
+  });
 });

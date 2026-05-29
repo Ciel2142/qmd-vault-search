@@ -1,5 +1,7 @@
 import type { StaleState } from "./git-stale-status";
 
+const REINDEX_DEDUP_MS = 5000;
+
 export interface GitTriggerDeps {
   onHeadChange: (cb: () => void) => () => void;
   isMergeInProgress: () => Promise<boolean>;
@@ -7,6 +9,8 @@ export interface GitTriggerDeps {
   setStale: (s: StaleState) => void;
   debounceMs: number;
   autoReindex: boolean;
+  /** Epoch ms of the last completed reindex (0 if none). Used to skip a redundant reindex within REINDEX_DEDUP_MS of a manual sync/pull (spec §6.2). */
+  lastReindexAt: () => number;
 }
 
 /** Wire head-change → guard → debounce → reindex. Returns a disposer. */
@@ -22,6 +26,10 @@ export function registerGitTriggers(deps: GitTriggerDeps): () => void {
     try {
       if (await deps.isMergeInProgress()) {
         deps.setStale({ kind: "deferred-by-merge" });
+        return;
+      }
+      if (Date.now() - deps.lastReindexAt() < REINDEX_DEDUP_MS) {
+        deps.setStale({ kind: "clean" });
         return;
       }
       deps.setStale({ kind: "stale" });

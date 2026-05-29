@@ -115,8 +115,10 @@ export default class QmdPlugin extends Plugin {
         onHeadChange: (cb) => onHeadChange(this.app, cb),
         isMergeInProgress: () => isMergeInProgress(vaultPath),
         reindexNow: () => this.indexer.reindexNow(),
+        lastReindexAt: () => this.indexer.lastReindexAt,
         setStale: (s) => this.gitStatus.setState(s),
         debounceMs: this.settings.gitAutoReindexDebounceMs,
+        // obsidian-git presence is checked once at load; enabling it later needs a plugin reload.
         autoReindex: this.settings.gitAutoReindex && isObsidianGitPresent(this.app),
       });
       this.register(dispose);

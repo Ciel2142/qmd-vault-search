@@ -9,6 +9,7 @@ function deps(overrides: Partial<GitTriggerDeps> = {}): GitTriggerDeps {
     setStale: vi.fn(),
     debounceMs: 0,
     autoReindex: true,
+    lastReindexAt: () => 0,
     ...overrides,
   };
 }
@@ -96,6 +97,33 @@ describe("registerGitTriggers", () => {
     fired();
     await vi.runAllTimersAsync();
     expect(d.setStale).toHaveBeenLastCalledWith({ kind: "error", message: "boom" });
+  });
+
+  it("skips reindex when a reindex completed within the dedup window", async () => {
+    let fired = () => {};
+    const now = Date.now();
+    const d = deps({
+      onHeadChange: vi.fn().mockImplementation((cb: () => void) => { fired = cb; return () => {}; }),
+      lastReindexAt: () => now,
+    });
+    registerGitTriggers(d);
+    fired();
+    await vi.runAllTimersAsync();
+    expect(d.reindexNow).not.toHaveBeenCalled();
+    expect(d.setStale).toHaveBeenLastCalledWith({ kind: "clean" });
+  });
+
+  it("reindexes when the last reindex is older than the dedup window", async () => {
+    let fired = () => {};
+    const base = Date.now();
+    const d = deps({
+      onHeadChange: vi.fn().mockImplementation((cb: () => void) => { fired = cb; return () => {}; }),
+      lastReindexAt: () => base - 6000,
+    });
+    registerGitTriggers(d);
+    fired();
+    await vi.runAllTimersAsync();
+    expect(d.reindexNow).toHaveBeenCalledTimes(1);
   });
 
   it("returns a disposer that unsubscribes", () => {
