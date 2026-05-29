@@ -52,3 +52,12 @@ describe("resolveVaultCollectionName", () => {
     expect(resolveVaultCollectionName({ savedName: "", hadSavedData: false, vaultName: "日本語" })).toBe("vault");
   });
 });
+
+describe("DEFAULT_SETTINGS — git integration fields", () => {
+  it("defaults gitAutoReindex to true", () => {
+    expect(DEFAULT_SETTINGS.gitAutoReindex).toBe(true);
+  });
+  it("defaults gitAutoReindexDebounceMs to 2000", () => {
+    expect(DEFAULT_SETTINGS.gitAutoReindexDebounceMs).toBe(2000);
+  });
+});

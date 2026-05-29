@@ -16,6 +16,8 @@ export interface QmdSettings {
   fallbackOnFailure: boolean;     // hybrid errors → retry as keyword
   fallbackOnZero: boolean;        // hybrid 0 results → retry as keyword
   autoReindex: boolean;           // reindex vault on save
+  gitAutoReindex: boolean;          // reindex after obsidian-git pull (on head-change)
+  gitAutoReindexDebounceMs: number; // idle delay after head-change before reindex
 }
 
 export const DEFAULT_SETTINGS: QmdSettings = {
@@ -34,6 +36,8 @@ export const DEFAULT_SETTINGS: QmdSettings = {
   fallbackOnFailure: true,
   fallbackOnZero: false,
   autoReindex: true,
+  gitAutoReindex: true,
+  gitAutoReindexDebounceMs: 2000,
 };
 
 export function baseUrl(s: Pick<QmdSettings, "daemonPort">): string {
