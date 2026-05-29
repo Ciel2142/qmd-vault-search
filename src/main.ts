@@ -14,6 +14,13 @@ import { ContextModal } from "./views/context-modal";
 import { DaemonStatusBar } from "./views/daemon-status-bar";
 import { spawn } from "node:child_process";
 import { platformSpawnOptions } from "./spawn-opts";
+import { isObsidianGitPresent, invokeGitCommand, onHeadChange } from "./git-bridge";
+import { isMergeInProgress } from "./git-merge-guard";
+import { GitStaleStatus } from "./git-stale-status";
+import { registerGitTriggers } from "./git-triggers";
+import { bootstrapVault } from "./git-bootstrap";
+import { makeRunGit } from "./git-runner";
+import { GitBootstrapModal } from "./views/git-bootstrap-modal";
 
 export default class QmdPlugin extends Plugin {
   settings!: QmdSettings;
@@ -22,6 +29,7 @@ export default class QmdPlugin extends Plugin {
   indexer!: Indexer;
   runQmd!: RunQmd;
   statusBar!: DaemonStatusBar;
+  gitStatus!: GitStaleStatus;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -98,6 +106,70 @@ export default class QmdPlugin extends Plugin {
       this.registerEvent(this.app.vault.on("create", () => this.indexer.notifyChange()));
       this.registerEvent(this.app.vault.on("delete", () => this.indexer.notifyChange()));
       this.registerEvent(this.app.vault.on("rename", () => this.indexer.notifyChange()));
+    }
+
+    // Git integration. Wires obsidian-git head-change → debounced reindex.
+    if (vaultPath) {
+      this.gitStatus = new GitStaleStatus(this.addStatusBarItem());
+      const dispose = registerGitTriggers({
+        onHeadChange: (cb) => onHeadChange(this.app, cb),
+        isMergeInProgress: () => isMergeInProgress(vaultPath),
+        reindexNow: () => this.indexer.reindexNow(),
+        setStale: (s) => this.gitStatus.setState(s),
+        debounceMs: this.settings.gitAutoReindexDebounceMs,
+        autoReindex: this.settings.gitAutoReindex && isObsidianGitPresent(this.app),
+      });
+      this.register(dispose);
+
+      this.addCommand({
+        id: "qmd-reindex-and-sync",
+        name: "Reindex + Commit-and-sync (obsidian-git)",
+        callback: async () => {
+          if (!isObsidianGitPresent(this.app)) {
+            new Notice("Install the obsidian-git plugin to use sync features.");
+            return;
+          }
+          this.gitStatus.setState({ kind: "stale" });
+          try {
+            await this.indexer.reindexNow();
+            this.gitStatus.setState({ kind: "clean" });
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            this.gitStatus.setState({ kind: "error", message: msg });
+            new Notice(`Reindex failed: ${msg}`);
+            return;
+          }
+          const r = await invokeGitCommand(this.app, "obsidian-git:push");
+          if (!r.ok) new Notice(r.error ?? "obsidian-git push failed.");
+        },
+      });
+
+      this.addCommand({
+        id: "qmd-bootstrap-vault",
+        name: "Bootstrap vault from remote",
+        callback: () => {
+          new GitBootstrapModal(this.app, async (input) => {
+            if (!input) return;
+            const runGit = makeRunGit({ spawn, cwd: vaultPath });
+            this.gitStatus.setState({ kind: "stale" });
+            const result = await bootstrapVault({ vaultPath, remoteUrl: input.url, branch: input.branch, runGit });
+            if (!result.ok) {
+              this.gitStatus.setState({ kind: "error", message: result.error ?? "Bootstrap failed." });
+              new Notice(`Bootstrap failed: ${result.error}`);
+              return;
+            }
+            try {
+              await this.indexer.reindexNow();
+              this.gitStatus.setState({ kind: "clean" });
+              new Notice("Vault bootstrapped from remote.");
+            } catch (e: unknown) {
+              const msg = e instanceof Error ? e.message : String(e);
+              this.gitStatus.setState({ kind: "error", message: msg });
+              new Notice(`Reindex failed: ${msg}`);
+            }
+          }).open();
+        },
+      });
     }
   }
 
