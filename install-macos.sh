@@ -14,7 +14,7 @@
 #
 set -euo pipefail
 
-PLUGIN_ID="qmd-search"
+PLUGIN_ID="qmd-vault-search"
 ARTIFACTS=(main.js manifest.json styles.css)
 
 # Always operate from the repo root (this script's own directory).
@@ -76,4 +76,4 @@ for f in "${ARTIFACTS[@]}"; do
 done
 
 echo "Installed '$PLUGIN_ID' -> $DEST"
-echo "Reload Obsidian, then enable 'qmd Search' under Settings -> Community plugins."
+echo "Reload Obsidian, then enable 'qmd Vault Search' under Settings -> Community plugins."

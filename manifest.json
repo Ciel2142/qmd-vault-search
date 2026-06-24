@@ -5,5 +5,6 @@
   "minAppVersion": "1.7.2",
   "description": "Search your vault and qmd collections with hybrid (BM25 + vector) search, plus related-notes and semantic link suggestions.",
   "author": "igi2131",
+  "authorUrl": "https://github.com/Ciel2142",
   "isDesktopOnly": true
 }

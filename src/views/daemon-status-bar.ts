@@ -21,10 +21,12 @@ export class DaemonStatusBar {
   private state: DaemonState = "unknown";
 
   constructor(private readonly deps: DaemonStatusBarDeps) {
-    this.deps.el.addEventListener("click", () => {
-      if (this.state === "down") void this.startDaemon();
-    });
     this.render();
+  }
+
+  /** Click handler for the status-bar element. Registered by the plugin via registerDomEvent (auto-cleaned on unload). */
+  handleClick(): void {
+    if (this.state === "down") void this.startDaemon();
   }
 
   private render(): void {

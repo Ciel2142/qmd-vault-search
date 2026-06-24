@@ -80,13 +80,15 @@ export default class QmdPlugin extends Plugin {
     if (status === "started") new Notice("qmd daemon not running — starting it. Give it a few seconds to load models.");
 
     // Status-bar indicator + manual start. Polls health so it also tracks the daemon dying mid-session.
+    const statusBarEl = this.addStatusBarItem();
     this.statusBar = new DaemonStatusBar({
-      el: this.addStatusBarItem(),
+      el: statusBarEl,
       port: this.settings.daemonPort,
       health: () => this.client.health(),
       start: () => this.daemon.start(),
       notify: (m) => new Notice(m),
     });
+    this.registerDomEvent(statusBarEl, "click", () => this.statusBar.handleClick());
     void this.statusBar.refresh();
     this.registerInterval(window.setInterval(() => void this.statusBar.refresh(), 10_000));
     this.addCommand({ id: "start-qmd-daemon", name: "Start qmd daemon", callback: () => void this.statusBar.startDaemon() });

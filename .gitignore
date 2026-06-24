@@ -24,3 +24,6 @@ data.json
 .beads-credential-key
 # br doctor per-run artifacts
 .doctor/
+
+# Local Claude Code config
+.claude/

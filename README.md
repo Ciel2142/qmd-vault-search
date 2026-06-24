@@ -13,6 +13,24 @@ Search your vault and external [qmd](https://www.npmjs.com/package/@tobilu/qmd) 
 
 ---
 
+## Installation
+
+> Not yet in the official Community Plugins directory. Two ways to install today (both need the **qmd engine** from Step 1 below):
+
+**Via BRAT (recommended — auto-updates):**
+
+1. Install the **BRAT** community plugin (Settings → Community plugins → Browse → "BRAT").
+2. BRAT → **Add Beta plugin** → enter `Ciel2142/qmd-vault-search` → **Add**.
+3. Enable **qmd Vault Search** under Settings → Community plugins.
+
+**Manual (from a release):**
+
+Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/Ciel2142/qmd-vault-search/releases/latest) into `<your-vault>/.obsidian/plugins/qmd-vault-search/`, then enable the plugin.
+
+To build from source instead, follow Steps 2–4 below.
+
+---
+
 ## Requirements
 
 1. **Obsidian** 1.7.2 or newer (desktop).
@@ -71,10 +89,10 @@ This produces `main.js` in the project root. You now have the three files Obsidi
 ./install-macos.sh "/path/to/your/vault" # or pass the vault explicitly
 ```
 
-Otherwise, copy the three files into a `qmd-search` folder inside your vault's plugins directory by hand:
+Otherwise, copy the three files into a `qmd-vault-search` folder inside your vault's plugins directory by hand:
 
 ```
-<your-vault>/.obsidian/plugins/qmd-search/
+<your-vault>/.obsidian/plugins/qmd-vault-search/
 ├── main.js
 ├── manifest.json
 └── styles.css
@@ -83,14 +101,14 @@ Otherwise, copy the three files into a `qmd-search` folder inside your vault's p
 **macOS / Linux:**
 
 ```bash
-mkdir -p "<your-vault>/.obsidian/plugins/qmd-search"
-cp main.js manifest.json styles.css "<your-vault>/.obsidian/plugins/qmd-search/"
+mkdir -p "<your-vault>/.obsidian/plugins/qmd-vault-search"
+cp main.js manifest.json styles.css "<your-vault>/.obsidian/plugins/qmd-vault-search/"
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-$dest = "<your-vault>\.obsidian\plugins\qmd-search"
+$dest = "<your-vault>\.obsidian\plugins\qmd-vault-search"
 New-Item -ItemType Directory -Force -Path $dest
 Copy-Item main.js, manifest.json, styles.css $dest
 ```
@@ -197,4 +215,4 @@ npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + production bundle
 ```
 
-To iterate against a real vault, symlink or copy `main.js`/`manifest.json`/`styles.css` into the vault's `.obsidian/plugins/qmd-search/` folder and reload Obsidian after each build.
+To iterate against a real vault, symlink or copy `main.js`/`manifest.json`/`styles.css` into the vault's `.obsidian/plugins/qmd-vault-search/` folder and reload Obsidian after each build.
