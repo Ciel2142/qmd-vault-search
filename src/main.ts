@@ -13,7 +13,7 @@ import { QmdLinkSuggest } from "./views/link-suggest-view";
 import { ContextModal } from "./views/context-modal";
 import { DaemonStatusBar } from "./views/daemon-status-bar";
 import { spawn } from "node:child_process";
-import { platformSpawnOptions } from "./spawn-opts";
+import { platformSpawnOptions, shellQuoteArg } from "./spawn-opts";
 
 export default class QmdPlugin extends Plugin {
   settings!: QmdSettings;
@@ -28,7 +28,8 @@ export default class QmdPlugin extends Plugin {
     this.client = new QmdClient({ baseUrl: baseUrl(this.settings), fetchFn: makeRequestUrlFetch(requestUrl) });
 
     const spawnFn: SpawnFn = (cmd, args, opts) => {
-      const child = spawn(cmd, args, platformSpawnOptions(opts) as object);
+      // Quote spaced values for the win32 shell:true path (e.g. a binaryPath under "Program Files"); no-op off Windows.
+      const child = spawn(shellQuoteArg(cmd), args.map((a) => shellQuoteArg(a)), platformSpawnOptions(opts) as object);
       child.on("error", (e) => new Notice(`qmd daemon failed to start: ${e.message}. Check the qmd binary path in settings.`));
       return child;
     };

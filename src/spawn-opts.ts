@@ -14,3 +14,16 @@ export function platformSpawnOptions<T extends object>(
   if (platform === "win32") return { ...base, shell: true, windowsHide: true };
   return base;
 }
+
+/**
+ * Quote a single spawn argument for cmd.exe when shell:true is in effect (Windows .cmd shim).
+ * Under shell:true Node joins the command + args into one cmd.exe line WITHOUT quoting, so any value
+ * containing whitespace — e.g. a vault path like `C:\Users\me\Obsidian Vault` — splits into separate
+ * tokens (qmd then sees only `C:\Users\me\Obsidian`). Wrapping it in double quotes keeps it atomic;
+ * cmd.exe `/s` strips only the single outermost pair Node adds, leaving these inner quotes intact.
+ * No-op off win32, where spawn passes argv elements verbatim (no shell, spaces are already safe).
+ */
+export function shellQuoteArg(arg: string, platform: NodeJS.Platform = process.platform): string {
+  if (platform !== "win32") return arg;
+  return arg === "" || /\s/.test(arg) ? `"${arg}"` : arg;
+}

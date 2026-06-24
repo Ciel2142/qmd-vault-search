@@ -1,6 +1,6 @@
 {
   "name": "obsidian-qmd-vault-search",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "qmd search engine for Obsidian",
   "type": "module",
   "scripts": {
