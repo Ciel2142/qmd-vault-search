@@ -10,8 +10,9 @@ export function toVaultPath(file: string, vaultCollectionName: string): string {
 
 /**
  * Map a qmd result to an open target. qmd both prefixes paths with the collection
- * name AND slugs spaces to hyphens (`vault/My Note.md` → `vault/My-Note.md`), so we
- * strip the prefix then ask `resolveVaultPath` for the real (un-slugged) vault path.
+ * name AND runs each path through `handelize()` (`vault/My Note.md` → `vault/My-Note.md`,
+ * underscores/punctuation/dots collapse to hyphens too — see vault-resolver.ts), so we
+ * strip the prefix then ask `resolveVaultPath` to reverse the slug to the real vault path.
  * If it resolves, open it there; otherwise it's an external-collection doc.
  */
 export function resolveOpenTarget(

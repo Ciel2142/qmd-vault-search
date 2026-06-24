@@ -25,6 +25,8 @@ export class QmdLinkSuggest extends EditorSuggest<LinkSuggestion> {
   private searchId = 0;
   private debounceTimer: number | null = null;
   private pendingResolve: ((results: LinkSuggestion[]) => void) | null = null;
+  private warmAt = 0;
+  private warming = false;
 
   constructor(app: App, private client: QmdClient, private settings: QmdSettings) {
     super(app);
@@ -34,7 +36,27 @@ export class QmdLinkSuggest extends EditorSuggest<LinkSuggestion> {
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
     const t = parseLinkTrigger(before);
     if (!t) return null;
+    this.warmEmbedder();
     return { start: { line: cursor.line, ch: t.startCh }, end: cursor, query: t.query };
+  }
+
+  /**
+   * Fire-and-forget embedder warm-up: prime the daemon's vec model so the first real
+   * suggestion query doesn't pay the cold model-load (~700ms measured). Called from
+   * onTrigger, which Obsidian fires on every keystroke while an `@@` span is open (not
+   * only when it opens). A `warming` in-flight guard collapses a burst of keystrokes to
+   * one request, and the 60s cooldown starts only AFTER a warm succeeds — so if the
+   * daemon was down (the exact cold-start case) the next `@@` retries instead of being
+   * throttled out for a minute. Errors are ignored; warming is best-effort.
+   */
+  private warmEmbedder(): void {
+    if (this.warming || Date.now() - this.warmAt < 60_000) return;
+    this.warming = true;
+    void this.client
+      .query({ searches: [{ type: "vec", query: "warm" }], collections: [this.settings.vaultCollectionName], rerank: false, limit: 1 })
+      .then(() => { this.warmAt = Date.now(); })
+      .catch(() => { /* daemon down / superseded — leave warmAt so the next @@ retries */ })
+      .finally(() => { this.warming = false; });
   }
 
   getSuggestions(context: EditorSuggestContext): Promise<LinkSuggestion[]> {
@@ -63,8 +85,9 @@ export class QmdLinkSuggest extends EditorSuggest<LinkSuggestion> {
       if (id !== this.searchId) { resolve([]); return; } // superseded
       const out: LinkSuggestion[] = [];
       for (const result of results) {
-        // qmd prefixes paths with the collection name (`vault/...`) and slugs spaces to hyphens;
-        // resolveOpenTarget strips the prefix + reverses the slug. External-collection hits aren't [[-linkable.
+        // qmd prefixes paths with the collection name (`vault/...`) and handelizes them
+        // (spaces/punctuation/underscores → hyphens); resolveOpenTarget strips the prefix +
+        // reverses the slug. External-collection hits aren't [[-linkable.
         const target = resolveOpenTarget(result.file, result.docid, resolveVaultPath, this.settings.vaultCollectionName);
         if (target.kind !== "vault") continue;
         const file = this.app.vault.getAbstractFileByPath(target.path);
