@@ -1,7 +1,7 @@
 {
   "id": "qmd-vault-search",
   "name": "qmd Vault Search",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "minAppVersion": "1.7.2",
   "description": "Search your vault and qmd collections with hybrid (BM25 + vector) search, plus related-notes and semantic link suggestions.",
   "author": "igi2131",
