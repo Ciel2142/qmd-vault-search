@@ -23,8 +23,6 @@ export interface LinkSuggestion {
  */
 export class QmdLinkSuggest extends EditorSuggest<LinkSuggestion> {
   private searchId = 0;
-  private debounceTimer: number | null = null;
-  private pendingResolve: ((results: LinkSuggestion[]) => void) | null = null;
   private warmAt = 0;
   private warming = false;
 
@@ -59,30 +57,28 @@ export class QmdLinkSuggest extends EditorSuggest<LinkSuggestion> {
       .finally(() => { this.warming = false; });
   }
 
+  /**
+   * Resolve directly off the query — no internal debounce. An EditorSuggest only
+   * opens its popup on the trigger cycle, so a result that resolves on a later
+   * setTimeout never reopens the popup that was closed while typing; the hit then
+   * surfaced only after the next keystroke (the "@@ shows nothing until I press
+   * space" bug). Returning the live query promise lets Obsidian open the popup as
+   * soon as the hits land; the searchId guard drops an out-of-order (superseded)
+   * response so a slow earlier keystroke can't clobber a newer one.
+   */
   getSuggestions(context: EditorSuggestContext): Promise<LinkSuggestion[]> {
-    // Supersede any pending debounce: clear its timer and resolve its promise empty so nothing dangles.
-    if (this.debounceTimer !== null) { window.clearTimeout(this.debounceTimer); this.debounceTimer = null; }
-    if (this.pendingResolve) { this.pendingResolve([]); this.pendingResolve = null; }
     const plan = planLinkQuery(context.query, this.settings);
     if (plan.kind !== "run") return Promise.resolve([]);
-    const { searches, collections, rerank } = plan;
-    return new Promise<LinkSuggestion[]>((resolve) => {
-      this.pendingResolve = resolve;
-      this.debounceTimer = window.setTimeout(() => {
-        this.debounceTimer = null;
-        this.pendingResolve = null;
-        void this.run(searches, collections, rerank, resolve);
-      }, this.settings.searchDebounceMs);
-    });
+    return this.run(plan.searches, plan.collections, plan.rerank);
   }
 
-  private async run(searches: QmdSubQuery[], collections: string[], rerank: boolean, resolve: (results: LinkSuggestion[]) => void): Promise<void> {
+  private async run(searches: QmdSubQuery[], collections: string[], rerank: boolean): Promise<LinkSuggestion[]> {
     const id = ++this.searchId;
-    // Fresh resolver per settled query: the suggester is long-lived and the vault mutates while editing.
+    // Fresh resolver per query: the suggester is long-lived and the vault mutates while editing.
     const resolveVaultPath = makeVaultResolver(this.app);
     try {
       const results = await this.client.query({ searches, collections, rerank });
-      if (id !== this.searchId) { resolve([]); return; } // superseded
+      if (id !== this.searchId) return []; // superseded by a newer keystroke
       const out: LinkSuggestion[] = [];
       for (const result of results) {
         // qmd prefixes paths with the collection name (`vault/...`) and handelizes them
@@ -93,10 +89,10 @@ export class QmdLinkSuggest extends EditorSuggest<LinkSuggestion> {
         const file = this.app.vault.getAbstractFileByPath(target.path);
         if (file instanceof TFile) out.push({ result, file });
       }
-      resolve(out);
+      return out;
     } catch {
-      // Superseded, daemon down, or query error → no popup, no crash.
-      resolve([]);
+      // Daemon down or query error → no popup, no crash.
+      return [];
     }
   }
 
