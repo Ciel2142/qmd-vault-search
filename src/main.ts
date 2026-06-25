@@ -33,7 +33,7 @@ export default class QmdPlugin extends Plugin {
       child.on("error", (e) => new Notice(`qmd daemon failed to start: ${e.message}. Check the qmd binary path in settings.`));
       return child;
     };
-    this.daemon = new DaemonController({ client: this.client, spawnFn, binaryPath: this.settings.binaryPath, port: this.settings.daemonPort });
+    this.daemon = new DaemonController({ client: this.client, spawnFn, binaryPath: this.settings.binaryPath, port: this.settings.daemonPort, vaultCollectionName: this.settings.vaultCollectionName });
 
     const vaultPath = this.app.vault.adapter instanceof FileSystemAdapter ? this.app.vault.adapter.getBasePath() : "";
     // qmd CLI runner shared by the indexer + the context menu/command. Captures
@@ -78,7 +78,14 @@ export default class QmdPlugin extends Plugin {
 
     // Daemon: probe, offer to start.
     const status = await this.daemon.ensureRunning();
-    if (status === "started") new Notice("qmd daemon not running — starting it. Give it a few seconds to load models.");
+    if (status === "started") {
+      new Notice("qmd daemon not running — starting it. Give it a few seconds to load models.");
+    } else if (!(await this.daemon.servesVaultCollection())) {
+      // Something already answers /health on this port but it isn't serving our vault index —
+      // typically a different qmd daemon holding the port (e.g. a WSL daemon under mirrored
+      // networking). Without this, every search would silently return nothing.
+      new Notice(`qmd: the daemon on port ${this.settings.daemonPort} has no "${this.settings.vaultCollectionName}" collection — another qmd daemon may be holding this port. Change "Daemon port" in qmd Vault Search settings.`, 10_000);
+    }
 
     // Status-bar indicator + manual start. Polls health so it also tracks the daemon dying mid-session.
     const statusBarEl = this.addStatusBarItem();
